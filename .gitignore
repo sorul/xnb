@@ -1,0 +1,10 @@
+# Folders
+__pycache__/
+data
+.vscode
+.pytest_cache/
+.benchmarks/
+
+# Files
+main.py
+poetry.lock
