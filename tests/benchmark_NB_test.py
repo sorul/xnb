@@ -25,7 +25,7 @@ def leukemia_dataset(n_cols = 500) -> tuple[pd.DataFrame, pd.Series]:
 # > poetry run pytest -k benchmark --verbose
 
 def test_accuracy_benchmark_naive_bayes():
-    X, y = leukemia_dataset()
+    X, y = iris_dataset()
     accuracy_list = {'snb':[], 'nb1':[], 'nb2':[]}
     n_features_selected = []
     skf = model_selection.StratifiedKFold(n_splits=5, shuffle = True, random_state=0)

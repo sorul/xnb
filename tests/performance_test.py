@@ -2,6 +2,7 @@ from kde_classifier.stratified_naive_bayes import Stratified_NB
 import pandas as pd
 import sklearn.model_selection as model_selection
 import time
+import pytest
 
 # Pytest-Benchmark: https://pypi.org/project/pytest-benchmark/
 
@@ -11,7 +12,7 @@ def iris_dataset() -> tuple[pd.DataFrame, pd.Series]:
     return  X, y
 
 
-def leukemia_dataset(n_cols=50) -> tuple[pd.DataFrame, pd.Series]:
+def leukemia_dataset(n_cols=500) -> tuple[pd.DataFrame, pd.Series]:
     df = pd.read_csv("data/Leukemia_GSE9476.csv", sep=',').drop('samples', axis=1, errors='ignore')
     X, y = df.iloc[:, 1:n_cols], df.iloc[:,0]
     return X, y
@@ -33,55 +34,73 @@ def getBandwidths(X:pd.DataFrame, y:pd.Series) -> pd.DataFrame:
 #######################
 '''
 
-# > poetry run pytest -k kde --verbose
+# > poetry run pytest -k bandwidth -v
 
-def test_kde_asyncio(benchmark):
-    X, y = leukemia_dataset()
+@pytest.mark.benchmark(
+    group="group-name",
+    min_time=0.1,
+    max_time=0.5,
+    min_rounds=10,
+    timer=time.time,
+    disable_gc=True,
+    warmup=False
+)
+def test_calculate_bandwidth(benchmark):
+    X, y = iris_dataset()
+    snb = Stratified_NB()
+    snb._class_values = set(y)
+
+    benchmark(snb._calculate_bandwidth, X, y)
+    
+    assert len(snb._bw.variable.unique()) == len(X.columns) and len(snb._bw.target.unique()) == len(set(y))
+
+# > poetry run pytest -k kde -v
+
+def test_kde(benchmark):
+    X, y = iris_dataset()
     snb = Stratified_NB()
     snb._class_values = set(y)
     snb._bw = getBandwidths(X, y)
 
-    benchmark(snb._calculate_kde_asyncio, X, y)
+    benchmark(snb._calculate_kde, X, y)
     
     assert len(snb._kde_list) > 0 and len(snb._kernel_density_dict) > 0
 
-
-
-# > poetry run pytest -k bandwidth --verbose
+# > poetry run pytest -k bandwidth -v
 
 def test_calculate_bandwidth_best_estimator(benchmark):
-    X, y = leukemia_dataset()
+    X, y = iris_dataset()
     snb = Stratified_NB(bw_function=Stratified_NB.BW_BEST_ESTIMATOR)
     snb._class_values = set(y)
 
     benchmark(snb._calculate_bandwidth, X, y)
     
-    assert len(snb._bw) > 0
+    assert len(snb._bw.variable.unique()) == len(X.columns) and len(snb._bw.target.unique()) == len(set(y))
 
 def test_calculate_bandwidth_hscott(benchmark):
-    X, y = leukemia_dataset()
+    X, y = iris_dataset()
     snb = Stratified_NB(bw_function=Stratified_NB.BW_HSCOTT)
     snb._class_values = set(y)
 
     benchmark(snb._calculate_bandwidth, X, y)
     
-    assert len(snb._bw) > 0
+    assert len(snb._bw.variable.unique()) == len(X.columns) and len(snb._bw.target.unique()) == len(set(y))
 
 def test_calculate_bandwidth_hsilverman(benchmark):
-    X, y = leukemia_dataset()
+    X, y = iris_dataset()
     snb = Stratified_NB(bw_function=Stratified_NB.BW_HSILVERMAN)
     snb._class_values = set(y)
 
     benchmark(snb._calculate_bandwidth, X, y)
     
-    assert len(snb._bw) > 0
+    assert len(snb._bw.variable.unique()) == len(X.columns) and len(snb._bw.target.unique()) == len(set(y))
 
 def test_calculate_bandwidth_hjs(benchmark):
-    X, y = leukemia_dataset()
+    X, y = iris_dataset()
     snb = Stratified_NB(bw_function=Stratified_NB.BW_HSJ)
     snb._class_values = set(y)
 
     benchmark(snb._calculate_bandwidth, X, y)
     
-    assert len(snb._bw) > 0
+    assert len(snb._bw.variable.unique()) == len(X.columns) and len(snb._bw.target.unique()) == len(set(y))
 

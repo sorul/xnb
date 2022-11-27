@@ -11,6 +11,10 @@ import numpy as np
 from scipy.stats import norm
 from scipy.stats import poisson
 import scipy.interpolate as interpolate
+import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KernelDensity
+import asyncio
 
 __all__ = ['wmean',
            'wvar',
@@ -18,8 +22,8 @@ __all__ = ['wmean',
            'hsilverman',
            'hscott',
            'hnorm',
-           'hsj']
-
+           'hsj',
+           'best_estimator']
 
 def wmean(x, w):
     '''
@@ -110,13 +114,23 @@ def scoreatpercentile(data, percentile):
     return interpolator(per/100.)
 
 
-def hsilverman(x):
+def best_estimator(data:pd.DataFrame, x_sample) -> float:
+    range = abs(max(data) - min(data))
+    len_unique = len(data.unique())
+    params = {'bandwidth': np.linspace(range/len_unique, range, x_sample)}
+    data = data.values[:, np.newaxis]
+    grid = GridSearchCV(KernelDensity(), params, cv=3)
+    grid.fit(data)
+    return grid.best_estimator_.bandwidth
+
+
+def hsilverman(x, x_sample):
     A = _select_sigma(x)
     n = len(x)
     return .9 * A * n ** (-0.2)
 
 
-def hscott(x):
+def hscott(x, x_sample):
     A = _select_sigma(x)
     n = len(x)
     return 1.059 * A * n ** (-0.2)
@@ -154,7 +168,7 @@ def hnorm(x, weights=None):
         return (4.0 / ((ndim + 2.0) * n) ** (1.0 / (ndim + 4.0))) * sd
 
 
-def hsj(x, weights=None):
+def hsj(x, x_sample, weights=None):
     '''
     Sheather-Jones bandwidth estimator [1]_.
 

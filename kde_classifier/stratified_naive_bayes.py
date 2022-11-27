@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 import multiprocessing
 import multiprocessing.managers
@@ -8,8 +7,8 @@ from multiprocessing import Pool
 import mpmath as mp
 import itertools
 from math import log2, prod, ceil, log10, sqrt
-from kde_classifier import hselect
-from kde_classifier.kde_object import KDE
+from kde_classifier import _bandwidth_functions as bf
+from kde_classifier._kde_object import KDE
 import asyncio
 
 class Stratified_NB():
@@ -38,47 +37,42 @@ class Stratified_NB():
         self._class_values:set
         self._bw:pd.DataFrame
         self._class_representation:dict
+        self._bw_list:list
 
-
-    def _bw_best_estimator(self, data:pd.DataFrame) -> float:
-        range = abs(max(data) - min(data))
-        len_unique = len(data.unique())
-        params = {'bandwidth': np.linspace(range/len_unique, range, self.x_sample)}
-        data = data.values[:, np.newaxis]
-        grid = GridSearchCV(KernelDensity(), params, cv=3)
-        grid.fit(data)
-        return grid.best_estimator_.bandwidth
+    
+    def __background(f):
+        def wrapped(*args, **kwargs):
+            return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
+        return wrapped
 
 
     def _calculate_bandwidth(self, X:pd.DataFrame, y:pd.Series) -> None:
         
         # Different types of function can be used
         if self.bw_function == self.BW_HSILVERMAN:
-            bw_f = hselect.hsilverman
+            bw_f = bf.hsilverman
         elif self.bw_function == self.BW_HSCOTT:
-            bw_f = hselect.hscott
+            bw_f = bf.hscott
         elif self.bw_function == self.BW_HSJ:
-            bw_f = hselect.hsj
+            bw_f = bf.hsj
+        elif self.bw_function == self.BW_BEST_ESTIMATOR:
+           bw_f = bf.best_estimator
         else:
-           bw_f = self._bw_best_estimator
+            raise ValueError("'"+self.bw_function+"' is not a valid value for a bandwidth function.")
 
         # Building the dataframe
-        bw_list = []
+        self._bw_list = multiprocessing.Manager().list()
         for v in X.columns:
             for c in self._class_values:
-                bw_list.append([v, c, bw_f(X[y == c][v])])
+                self._bw_list.append([v, c, bw_f(X[y == c][v], self.x_sample)])
 
-        self._bw = pd.DataFrame(bw_list, columns=['variable','target','bandwidth'])
-
-
-    def _background(f):
-            def wrapped(*args, **kwargs):
-                return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
-            return wrapped
+        while(list(self._bw_list)) == 0:
+            pass
+        self._bw = pd.DataFrame(list(self._bw_list), columns=['variable', 'target', 'bandwidth'])
 
 
-    @_background
-    def _kde_lambda_asyncio(self, X:pd.DataFrame, y:pd.Series, c:str, v:str) -> None:
+    @__background
+    def _kde_lambda(self, X:pd.DataFrame, y:pd.Series, c:str, v:str) -> None:
         data = X[y == c][v]
         minimum, maximum = data.min(), data.max()
         margin = (maximum-minimum) * self.margin_percentage
@@ -90,13 +84,13 @@ class Stratified_NB():
         self._kde_list.append(KDE(v, c, x_points, y_points))
 
 
-    def _calculate_kde_asyncio(self, X:pd.DataFrame, y:pd.Series) -> None:
+    def _calculate_kde(self, X:pd.DataFrame, y:pd.Series) -> None:
         self._kernel_density_dict, self._kde_list = {}, multiprocessing.Manager().list()
         cols = X.columns
         for c in self._class_values:
             self._kernel_density_dict[c] = {}
             for v in cols:
-                self._kde_lambda_asyncio(X, y, c, v)
+                self._kde_lambda(X, y, c, v)
 
 
     def _normalize(self, data:list) -> list:
@@ -185,7 +179,7 @@ class Stratified_NB():
         self._class_values = set(y)
         self._calculate_target_representation(y)
         self._calculate_bandwidth(X, y)
-        self._calculate_kde_asyncio(X, y)
+        self._calculate_kde(X, y)
         self._calculate_divergence()
         self._calculate_feature_selection()
 
