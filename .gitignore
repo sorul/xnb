@@ -1,6 +1,7 @@
 # Folders
 __pycache__/
-data
+data/*
+!data/iris.csv
 .vscode
 .pytest_cache/
 .benchmarks/

@@ -1,3 +1,9 @@
+## 0.1.2 (2023-01-04)
+
+### Refactor
+- 'iris.csv' file included in the Git project.
+
+
 ## 0.1.1 (2022-11-27)
 
 ### Docs
