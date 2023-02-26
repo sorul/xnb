@@ -1,15 +1,14 @@
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import KernelDensity
-import multiprocessing
-import multiprocessing.managers
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 import mpmath as mp
 import itertools
 from math import log2, prod, ceil, log10, sqrt
 from kde_classifier import _bandwidth_functions as bf
 from kde_classifier._kde_object import KDE
-import asyncio
+import copy
+
 
 class Stratified_NB():
 
@@ -28,11 +27,13 @@ class Stratified_NB():
         self.margin_percentage = margin_percentage
         self.x_sample = x_sample
         self.bw_function = bw_function
-        self.feature_selection_dict = {}
+        fature_selection_dict = {}
+        self.feature_selection_dict = fature_selection_dict
         
         # Private
+        self._X:pd.DataFrame
+        self._y:pd.Series
         self._kde_list:list[KDE]
-        self._kernel_density_dict:dict[KernelDensity]
         self._ranking_divergence:pd.DataFrame
         self._class_values:set
         self._bw:pd.DataFrame
@@ -40,14 +41,7 @@ class Stratified_NB():
         self._bw_list:list
 
     
-    def __background(f):
-        def wrapped(*args, **kwargs):
-            return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
-        return wrapped
-
-
-    def _calculate_bandwidth(self, X:pd.DataFrame, y:pd.Series) -> None:
-        
+    def _calculate_bandwidth(self) -> None:
         # Different types of function can be used
         if self.bw_function == self.BW_HSILVERMAN:
             bw_f = bf.hsilverman
@@ -61,75 +55,66 @@ class Stratified_NB():
             raise ValueError("'"+self.bw_function+"' is not a valid value for a bandwidth function.")
 
         # Building the dataframe
-        self._bw_list = multiprocessing.Manager().list()
-        for v in X.columns:
+        self._bw_list = []
+        for v in self._X.columns:
             for c in self._class_values:
-                self._bw_list.append([v, c, bw_f(X[y == c][v], self.x_sample)])
+                self._bw_list.append([v, c, bw_f(self._X[self._y == c][v], self.x_sample)])
 
-        while(list(self._bw_list)) == 0:
-            pass
         self._bw = pd.DataFrame(list(self._bw_list), columns=['variable', 'target', 'bandwidth'])
 
-
-    @__background
-    def _kde_lambda(self, X:pd.DataFrame, y:pd.Series, c:str, v:str) -> None:
-        data = X[y == c][v]
-        minimum, maximum = data.min(), data.max()
+    
+    def _kde_lambda(self, c:str, v:str) -> KDE:
+        feature_data = self._X[v]
+        minimum, maximum = feature_data.min(), feature_data.max()
+        data = self._X[self._y == c][v]
         margin = (maximum-minimum) * self.margin_percentage
         x_points = np.linspace(minimum-margin, maximum+margin, self.x_sample)
         bw = self._bw[(self._bw.variable == data.name) & (self._bw.target == c)].bandwidth.values[0]
         kde = KernelDensity(kernel=self.kernel, bandwidth=bw).fit(data.values[:, np.newaxis])
         y_points = np.exp(kde.score_samples(x_points[:, np.newaxis]))
-        self._kernel_density_dict[c][v] = kde
-        self._kde_list.append(KDE(v, c, x_points, y_points))
+        return KDE(v, c, kde, x_points, y_points)
 
+    
+    def _calculate_kde(self, comb:list[tuple[KDE,KDE]] = None) -> None:
+        comb = list(itertools.product(self._class_values, self._X.columns)) if comb is None else comb
+        with Pool() as p:
+            self._kde_list = p.starmap(self._kde_lambda, comb)
+            p.close()
 
-    def _calculate_kde(self, X:pd.DataFrame, y:pd.Series) -> None:
-        self._kernel_density_dict, self._kde_list = {}, multiprocessing.Manager().list()
-        cols = X.columns
-        for c in self._class_values:
-            self._kernel_density_dict[c] = {}
-            for v in cols:
-                self._kde_lambda(X, y, c, v)
-
-
+    
     def _normalize(self, data:list) -> list:
         s = sum(data)
         return list(map(lambda x: x/s if s!=0 else 0, data)) # range[0, 1] -> the sum is 1
 
-
+    
     def _calculate_divergence(self) -> None:
-        
         def hellinger_distance(p:list, q:list):
-            return sqrt(1 - sum([sqrt(a*b) for a, b in zip(p, q)]))
-
-        def kl_divergence(p:list, q:list) -> float:
-            return sum([0 if (a == 0 or b < 2.2250738585072014e-308) else a * log2(a/b) for a,b in zip(p, q)])
-
-        comb:list[tuple[KDE,KDE]]
-        comb, scores = [], []
-        while len(comb) == 0:
-            comb = list(itertools.combinations(self._kde_list, 2))
-        for kde1, kde2 in comb:
-            t1, t2 = kde1.target, kde2.target
-            f1, f2 = kde1.feature, kde2.feature
-            if t1 != t2 and f1 == f2:
-                p = self._normalize(kde1.y_points)
-                q = self._normalize(kde2.y_points)
-                y_avg =  np.mean( np.array([ p, q ]), axis=0)
-                kl1 = kl_divergence(p, y_avg)
-                kl2 = kl_divergence(q, y_avg)
-                hellinger = hellinger_distance(p, q)
-                scores.append([f1, t1, t2, (kl1+kl2)/2, hellinger])
-
-        ranking = pd.DataFrame(scores, columns=['variable','p0','p1','indicator', 'hellinger']).drop_duplicates()
-        score_total = ranking.indicator.sum()
-        ranking['percentage'] = ranking.indicator / score_total
-        ranking = ranking.sort_values(by='hellinger', ascending=False)
+            s = sum([sqrt(a*b) for a, b in zip(p, q)])
+            assert s >= 0 and s<=1, f"Bhattacharyya coefficient in [0,1] expected, got: {s}"
+            return sqrt(1-s)
+        kde_dict = {}
+        for v in self._X.columns:
+            kde_dict[v] = []
+        for kde in self._kde_list:
+            kde_dict[kde.feature].append(kde)
+        scores = []
+        for c in kde_dict:
+            for kde1 in range(len(kde_dict[c])-1):
+                t1, f1 = kde_dict[c][kde1].target, kde_dict[c][kde1].feature
+                for kde2 in range(kde1+1, len(kde_dict[c])):
+                    t2, f2 = kde_dict[c][kde2].target, kde_dict[c][kde2].feature
+                    if t1 != t2 and f1 == f2:
+                        p = self._normalize(kde_dict[c][kde1].y_points)
+                        q = self._normalize(kde_dict[c][kde2].y_points)
+                        hellinger = hellinger_distance(p, q)
+                        scores.append([f1, t1, t2, hellinger])
+        ranking = pd.DataFrame(scores, columns=['variable','p0','p1', 'hellinger']).drop_duplicates()
+        ranking = ranking.sort_values(by=['hellinger','variable','p0','p1'], ascending=False)
         self._ranking_divergence = ranking
 
-
+    
     def _calculate_feature_selection(self):
+        self.feature_selection_dict = {}
         threshold = 1.0 - pow(10,-ceil(1+log10(len(self._ranking_divergence))))
         finished_class, dict_result = {}, {}
         for c in self._class_values:
@@ -140,13 +125,13 @@ class Stratified_NB():
         def addDict(dict_result, class_1, class_2, variable, hellinger, finished_class):
             k = class_1+' || '+variable
             m = map(lambda x: x.split(' || ')[0], dict_result[class_2].keys())
-            not_in_dict = class_1 not in set(m)
+            not_in_dict = class_1 not in set(copy.deepcopy(m))
             if not finished_class[class_1][class_2]:
                 if not_in_dict:
                     dict_result[class_2][k] = hellinger
                     finished_class[class_1][class_2] = hellinger >= threshold
                 else:
-                    class_list = list(m)
+                    class_list = list(copy.deepcopy(m))
                     p = 1
                     for i in range(len(class_list)):
                         if (class_list[i] == class_1):
@@ -176,16 +161,32 @@ class Stratified_NB():
 
 
     def fit(self, X:pd.DataFrame, y:pd.Series) -> None:
+        self._X = X
+        self._y = y
         self._class_values = set(y)
         self._calculate_target_representation(y)
-        self._calculate_bandwidth(X, y)
-        self._calculate_kde(X, y)
+        self._calculate_bandwidth()
+        self._calculate_kde()
         self._calculate_divergence()
         self._calculate_feature_selection()
 
 
     def predict(self, X:pd.DataFrame) -> list:
+        
+        if len(self.feature_selection_dict) == 0:
+            raise NotFittedError("This Stratified Naive Bayes instance is not fitted yet. Call 'fit' with appropiate arguments before using this estimator.")
+
         mp.dps = 100
+        # Calculating KDE values only with the selected features in fitting process
+        fsd = self.feature_selection_dict
+        comb = [(k, v) for k in fsd for v in fsd[k]]
+        self._calculate_kde(comb=comb)
+        kde_dict = {}
+        new_cols = list({x for v in fsd.values() for x in v})
+        for v in new_cols:
+            kde_dict[v] = {}
+        for kde in self._kde_list:
+            kde_dict[kde.feature][kde.target] = kde.kernel_density
 
         # Iterating each test record
         y_pred = []
@@ -199,7 +200,7 @@ class Stratified_NB():
                 kde_values = []
                 for v in variables:
                     # We get the probabilities with KDE. Instead of x_sample (50) records, we pass this time only one
-                    k = mp.exp(self._kernel_density_dict[c][v].score_samples(np.array([mp.mpf(str(row[v]))])[:, np.newaxis])[0])
+                    k = mp.exp(kde_dict[v][c].score_samples(np.array([mp.mpf(str(row[v]))])[:, np.newaxis])[0])
                     kde_values.append(k)
                 
                 pr = prod(kde_values)
@@ -211,7 +212,7 @@ class Stratified_NB():
                     m, y = probability, c
             
             if s > 0:
-                p = list(map(lambda x: (x[0]/s, x[1]), probabilities))
+                p = list(map(lambda x: (x[0]/s, x[1]), probabilities)) # The probability of being the class
                 # y_pred.append((y, p))
                 y_pred.append(y)
             else:
@@ -223,9 +224,9 @@ class Stratified_NB():
         return y_pred
             
 
-
-            
-    
-
-
-    
+class NotFittedError(ValueError, AttributeError):
+    """
+    Exception class to raise if estimator is used before fitting.
+    This class inherits from both ValueError and AttributeError to help with
+    exception handling and backward compatibility.
+    """

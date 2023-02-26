@@ -1,6 +1,7 @@
 # Folders
 __pycache__/
-data
+data/*
+!data/iris.csv
 .vscode
 .pytest_cache/
 .benchmarks/
@@ -8,3 +9,6 @@ data
 # Files
 main.py
 poetry.lock
+pruebas.ipynb
+*.lprof
+_alternative_functions.py
