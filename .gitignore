@@ -9,3 +9,6 @@ data/*
 # Files
 main.py
 poetry.lock
+pruebas.ipynb
+*.lprof
+_alternative_functions.py
