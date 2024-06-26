@@ -72,7 +72,7 @@ def empiricalcdf(data, method='Hazen'):
     """Return the empirical cdf.
     Methods available:
         Hazen:       (i-0.5)/N
-            Weibull:     i/(N+1)
+        Weibull:     i/(N+1)
         Chegodayev:  (i-.3)/(N+.4)
         Cunnane:     (i-.4)/(N+.2)
         Gringorten:  (i-.44)/(N+.12)
@@ -238,3 +238,85 @@ def sj(x, h):
 
     return (norm.pdf(0, 0, np.sqrt(2)) /
             (n * abs(sdalpha2[0, 0]))) ** 0.2 - h
+
+
+def improved_sheather_jones(data, weights=None):
+    """
+    The Improved Sheater Jones (ISJ) algorithm from the paper by Botev et al.
+    This algorithm computes the optimal bandwidth for a gaussian kernel,
+    and works very well for bimodal data (unlike other rules). The
+    disadvantage of this algorithm is longer computation time, and the fact
+    that this implementation does not always converge if very few data
+    points are supplied.
+
+    Understanding this algorithm is difficult, see:
+    https://books.google.no/books?id=Trj9HQ7G8TUC&pg=PA328&lpg=PA328&dq=
+    sheather+jones+why+use+dct&source=bl&ots=1ETdKd_6EF&sig=jZk4R515GB1xsn-
+    VZVnjr-JfjSI&hl=en&sa=X&ved=2ahUKEwi1_czNncTcAhVGhqYKHaPiBtcQ6AEwA3oEC
+    AcQAQ#v=onepage&q=sheather%20jones%20why%20use%20dct&f=false
+
+    Parameters
+    ----------
+    data: array-like
+        The data points. Data must have shape (obs, 1).
+    weights: array-like, optional
+        One weight per data point. Must have shape (obs,). If None is
+        passed, uniform weights are used.
+    """
+    obs, dims = data.shape
+    if not dims == 1:
+        raise ValueError("ISJ is only available for 1D data.")
+
+    n = 2**10
+
+    # weights <= 0 still affect calculations unless we remove them
+    if weights is not None:
+        data = data[weights > 0]
+        weights = weights[weights > 0]
+
+    # Setting `percentile` higher decreases the chance of overflow
+    xmesh = autogrid(data, boundary_abs=6, num_points=n, boundary_rel=0.5)
+    data = data.ravel()
+    xmesh = xmesh.ravel()
+
+    # Create an equidistant grid
+    R = np.max(data) - np.min(data)
+    # dx = R / (n - 1)
+    data = data.ravel()
+    N = len(np.unique(data))
+
+    # Use linear binning to bin the data on an equidistant grid, this is a
+    # prerequisite for using the FFT (evenly spaced samples)
+    initial_data = linear_binning(data.reshape(-1, 1), xmesh, weights)
+    assert np.allclose(initial_data.sum(), 1)
+
+    # Compute the type 2 Discrete Cosine Transform (DCT) of the data
+    a = fftpack.dct(initial_data)
+
+    # Compute the bandwidth
+    # The definition of a2 used here and in `_fixed_point` correspond to
+    # the one cited in this issue:
+    # https://github.com/tommyod/KDEpy/issues/95
+    I_sq = np.power(np.arange(1, n, dtype=FLOAT), 2)
+    a2 = a[1:] ** 2
+
+    # Solve for the optimal (in the AMISE sense) t
+    t_star = _root(_fixed_point, N, args=(N, I_sq, a2))
+
+    # The remainder of the algorithm computes the actual density
+    # estimate, but this function is only used to compute the
+    # bandwidth, since the bandwidth may be used for other kernels
+    # apart from the Gaussian kernel
+
+    # Smooth the initial data using the computed optimal t
+    # Multiplication in frequency domain is convolution
+    # integers = np.arange(n, dtype=float)
+    # a_t = a * np.exp(-integers**2 * np.pi ** 2 * t_star / 2)
+
+    # Diving by 2 done because of the implementation of fftpack.idct
+    # density = fftpack.idct(a_t) / (2 * R)
+
+    # Due to overflow, some values might be smaller than zero, correct it
+    # density[density < 0] = 0.
+    bandwidth = np.sqrt(t_star) * R
+    return bandwidth

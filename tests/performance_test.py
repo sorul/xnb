@@ -1,5 +1,5 @@
-from kde_classifier.stratified_naive_bayes import Stratified_NB
-from kde_classifier._kde_object import KDE
+from xnb_cayetano.stratified_naive_bayes import Stratified_NB
+from xnb_cayetano._kde_object import KDE
 import pandas as pd
 import itertools
 import pytest

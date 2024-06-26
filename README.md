@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 
 ''' 1. Read the dataset. '''
-df = pd.read_csv("iris.csv")
+df = pd.read_csv("data/iris.csv")
 X, y = df.iloc[:, 0:-1], df.iloc[:,-1]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=0)
 
@@ -17,7 +17,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random
 snb = Stratified_NB()
 snb.fit(X_train, y_train)
 
-''' 3. When the fit() function finishes, we can now access the feture selection it has calculated. '''
+''' 3. When the fit() function finishes, we can now access the feature selection it has calculated. '''
 feature_selection = snb.feature_selection_dict
 
 ''' 4. We predict the values of "y_test" thanks to the calculated dictionary. '''

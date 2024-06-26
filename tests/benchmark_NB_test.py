@@ -1,4 +1,4 @@
-from kde_classifier.stratified_naive_bayes import Stratified_NB
+from xnb_cayetano.stratified_naive_bayes import Stratified_NB
 from sklearn.naive_bayes import GaussianNB
 import sklearn.model_selection as model_selection
 from sklearn.metrics import accuracy_score
