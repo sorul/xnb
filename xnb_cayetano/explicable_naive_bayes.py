@@ -5,12 +5,13 @@ from multiprocessing import Pool, Manager
 import mpmath as mp
 import itertools
 from math import log2, prod, ceil, log10, sqrt
-from xnb_cayetano import _bandwidth_functions as bf
-from xnb_cayetano._kde_object import KDE
 import copy
 
+from xnb_cayetano import _bandwidth_functions as bf
+from xnb_cayetano._kde_object import KDE
 
-class Stratified_NB():
+
+class XNB():
 
   # Bandwitdh functions
   BW_HSILVERMAN = "hsilverman"
@@ -21,7 +22,13 @@ class Stratified_NB():
   # Kernels
   K_GAUSSIAN = "gaussian"
 
-  def __init__(self, kernel: str = K_GAUSSIAN, margin_percentage: float = 0, x_sample: int = 50, bw_function: str = BW_HSILVERMAN) -> None:
+  def __init__(
+      self,
+      kernel: str = K_GAUSSIAN,
+      margin_percentage: float = 0,
+      x_sample: int = 50,
+      bw_function: str = BW_HSILVERMAN
+  ) -> None:
     # Public
     self.kernel = kernel
     self.margin_percentage = margin_percentage
@@ -62,7 +69,7 @@ class Stratified_NB():
             [v, c, bw_f(self._X[self._y == c][v], self.x_sample)])
 
     self._bw = pd.DataFrame(list(self._bw_list), columns=[
-                            'variable', 'target', 'bandwidth'])
+        'variable', 'target', 'bandwidth'])
 
   def _kde_lambda(self, c: str, v: str) -> KDE:
     feature_data = self._X[v]
@@ -79,7 +86,7 @@ class Stratified_NB():
 
   def _calculate_kde(self, comb: list[tuple[KDE, KDE]] = None) -> None:
     comb = list(itertools.product(self._class_values,
-                self._X.columns)) if comb is None else comb
+                                  self._X.columns)) if comb is None else comb
     with Pool() as p:
       self._kde_list = p.starmap(self._kde_lambda, comb)
       p.close()
