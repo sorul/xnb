@@ -19,16 +19,16 @@ from sklearn import preprocessing
 offset_print = 80
 
 
-class bcolors:
-  HEADER = '\033[95m'
-  OKBLUE = '\033[94m'
-  OKCYAN = '\033[96m'
-  OKGREEN = '\033[92m'
-  WARNING = '\033[93m'
-  RED = '\033[91m'
-  ENDC = '\033[0m'
-  BOLD = '\033[1m'
-  UNDERLINE = '\033[4m'
+# class bcolors:
+#   HEADER = '\033[95m'
+#   OKBLUE = '\033[94m'
+#   OKCYAN = '\033[96m'
+#   OKGREEN = '\033[92m'
+#   WARNING = '\033[93m'
+#   RED = '\033[91m'
+#   ENDC = '\033[0m'
+#   BOLD = '\033[1m'
+#   UNDERLINE = '\033[4m'
 
 
 class XNB():
@@ -74,10 +74,10 @@ class XNB():
     self._bw_dict: dict
     self._variables: list
 
-  def __background(f):
-    def wrapped(*args, **kwargs):
-      return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
-    return wrapped
+  # def __background(f):
+  #   def wrapped(*args, **kwargs):
+  #     return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
+  #   return wrapped
 
   def _calculate_bandwidth(self, X: pd.DataFrame, y: pd.Series) -> None:
     inicio = time.time()
@@ -206,36 +206,18 @@ class XNB():
         if (c != c2):
           finished_class[c][c2] = False
 
-    def addDict(dict_result, class_1, class_2, variable, hellinger, finished_class):
-      if not finished_class[class_1][class_2]:
-        k = class_1+' || '+variable
-        not_in_dict = class_1 not in set(
-            map(lambda x: x.split(' || ')[0], dict_result[class_2].keys()))
-        if not_in_dict:
-          dict_result[class_2][k] = hellinger
-          finished_class[class_1][class_2] = hellinger >= threshold
-        else:
-          class_list = list(map(lambda x: x.split(
-              ' || ')[0], dict_result[class_2].keys()))
-          p = 1
-          for i in range(len(class_list)):
-            if (class_list[i] == class_1):
-              valor = list(dict_result[class_2].values())[i]
-              p *= (1-valor)
-          dict_result[class_2][k] = hellinger
-          finished_class[class_1][class_2] = (1-(p*(1-hellinger))) >= threshold
-      return dict_result
-
     for _, row in self._ranking_divergence.iterrows():
       variable = row.variable
       class_1 = row.p0
       class_2 = row.p1
       hellinger = row.hellinger
       if hellinger > 0.5:
-        dict_result = addDict(dict_result, class_1, class_2,
-                              variable, hellinger, finished_class)
-        dict_result = addDict(dict_result, class_2, class_1,
-                              variable, hellinger, finished_class)
+        dict_result, finished_class = self._addDict(dict_result, class_1, class_2,
+                                                    variable, hellinger, finished_class,
+                                                    threshold)
+        dict_result, finished_class = self._addDict(dict_result, class_2, class_1,
+                                                    variable, hellinger, finished_class,
+                                                    threshold)
       progressBar.next()
 
     for d in dict_result:
@@ -244,6 +226,29 @@ class XNB():
     fin = time.time()
     progressBar.finish()
     print(f'T. FEATURE SELECTION: {fin-inicio:.3f} sec.'.rjust(offset_print))
+
+  @staticmethod
+  def _addDict(
+          dict_result, class_1, class_2, variable, hellinger, finished_class,
+          threshold):
+    if not finished_class[class_1][class_2]:
+      k = class_1+' || '+variable
+      not_in_dict = class_1 not in set(
+          map(lambda x: x.split(' || ')[0], dict_result[class_2].keys()))
+      if not_in_dict:
+        dict_result[class_2][k] = hellinger
+        finished_class[class_1][class_2] = hellinger >= threshold
+      else:
+        class_list = list(map(lambda x: x.split(
+            ' || ')[0], dict_result[class_2].keys()))
+        p = 1
+        for i in range(len(class_list)):
+          if (class_list[i] == class_1):
+            valor = list(dict_result[class_2].values())[i]
+            p *= (1-valor)
+        dict_result[class_2][k] = hellinger
+        finished_class[class_1][class_2] = (1-(p*(1-hellinger))) >= threshold
+    return dict_result, finished_class
 
   def _calculate_target_representation(self, y: pd.Series) -> None:
     self._class_representation = {}
@@ -257,7 +262,7 @@ class XNB():
                       max=len(self.feature_selection_dict))
     self._kernel_density_dict = {}
     for c, variables in self.feature_selection_dict.items():
-        # kde_values = []
+      # kde_values = []
       data_class = X[y == c]
       self._kernel_density_dict[c] = {}
       for v in variables:

@@ -101,11 +101,14 @@ class XNB():
       s = sum([sqrt(a*b) for a, b in zip(p, q)])
       assert s >= 0 and s <= 1, f"Bhattacharyya coefficient in [0,1] expected, got: {s}"
       return sqrt(1-s)
+
     kde_dict = {}
     for v in self._X.columns:
       kde_dict[v] = []
+
     for kde in self._kde_list:
       kde_dict[kde.feature].append(kde)
+
     scores = []
     for c in kde_dict:
       for kde1 in range(len(kde_dict[c])-1):
@@ -125,6 +128,7 @@ class XNB():
 
   def _calculate_feature_selection(self):
     self.feature_selection_dict = {}
+    
     threshold = 1.0 - pow(10, -ceil(1+log10(len(self._ranking_divergence))))
     finished_class, dict_result = {}, {}
     for c in self._class_values:
@@ -133,39 +137,43 @@ class XNB():
         if (c != c2):
           finished_class[c][c2] = False
 
-    def addDict(dict_result, class_1, class_2, variable, hellinger, finished_class):
-      k = class_1+' || '+variable
-      m = map(lambda x: x.split(' || ')[0], dict_result[class_2].keys())
-      not_in_dict = class_1 not in set(copy.deepcopy(m))
-      if not finished_class[class_1][class_2]:
-        if not_in_dict:
-          dict_result[class_2][k] = hellinger
-          finished_class[class_1][class_2] = hellinger >= threshold
-        else:
-          class_list = list(copy.deepcopy(m))
-          p = 1
-          for i in range(len(class_list)):
-            if (class_list[i] == class_1):
-              valor = list(dict_result[class_2].values())[i]
-              p *= (1-valor)
-          finished_class[class_1][class_2] = 1-p >= threshold
-          if not finished_class[class_1][class_2]:
-            dict_result[class_2][k] = hellinger
-      return dict_result
-
     for _, row in self._ranking_divergence.iterrows():
       variable = row.variable
       class_1 = row.p0
       class_2 = row.p1
       hellinger = row.hellinger
-      dict_result = addDict(dict_result, class_1, class_2,
-                            variable, hellinger, finished_class)
-      dict_result = addDict(dict_result, class_2, class_1,
-                            variable, hellinger, finished_class)
-
+      dict_result, finished_class = self._addDict(dict_result, class_1, class_2,
+                                                  variable, hellinger, finished_class,
+                                                  threshold)
+      dict_result, finished_class = self._addDict(dict_result, class_2, class_1,
+                                                  variable, hellinger, finished_class,
+                                                  threshold)
     for d in dict_result:
       self.feature_selection_dict[d] = set(
           map(lambda x: x.split(' || ')[1], dict_result[d].keys()))
+
+  @staticmethod
+  def _addDict(
+          dict_result, class_1, class_2, variable, hellinger, finished_class,
+          threshold):
+    k = class_1+' || '+variable
+    m = map(lambda x: x.split(' || ')[0], dict_result[class_2].keys())
+    not_in_dict = class_1 not in set(copy.deepcopy(m))
+    if not finished_class[class_1][class_2]:
+      if not_in_dict:
+        dict_result[class_2][k] = hellinger
+        finished_class[class_1][class_2] = hellinger >= threshold
+      else:
+        class_list = list(copy.deepcopy(m))
+        p = 1
+        for i in range(len(class_list)):
+          if (class_list[i] == class_1):
+            valor = list(dict_result[class_2].values())[i]
+            p *= (1-valor)
+        finished_class[class_1][class_2] = 1-p >= threshold
+        if not finished_class[class_1][class_2]:
+          dict_result[class_2][k] = hellinger
+    return dict_result, finished_class
 
   def _calculate_target_representation(self, y: pd.Series) -> None:
     self._class_representation = {}
@@ -192,8 +200,8 @@ class XNB():
     mp.dps = 100
     # Calculating KDE values only with the selected features in fitting process
     fsd = self.feature_selection_dict
-    comb = [(k, v) for k in fsd for v in fsd[k]]
-    self._calculate_kde(comb=comb)
+    # comb = [(k, v) for k in fsd for v in fsd[k]]
+    # self._calculate_kde(comb=comb)
     kde_dict = {}
     new_cols = list({x for v in fsd.values() for x in v})
     for v in new_cols:

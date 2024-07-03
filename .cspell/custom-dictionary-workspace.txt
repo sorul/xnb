@@ -1,0 +1,6 @@
+dnorm
+hnorm
+hscott
+hsilverman
+wmean
+wvar

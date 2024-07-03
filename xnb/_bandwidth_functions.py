@@ -14,14 +14,12 @@ from pandas import Series
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 
-__all__ = ['wmean',
-           'wvar',
-           'dnorm',
-           'hsilverman',
-           'hscott',
-           'hnorm',
-           'hsj',
-           'best_estimator']
+__all__ = [
+    'hsilverman',
+    'hscott',
+    'hsj',
+    'best_estimator'
+]
 
 
 def wmean(x, w):
@@ -172,7 +170,7 @@ def hnorm(x, weights=None) -> float:
   return 0.0
 
 
-def hsj(x):
+def hsj(x, x_sample):
   '''
   Sheather-Jones bandwidth estimator [1]_.
 
