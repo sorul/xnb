@@ -1,5 +1,5 @@
 from pandas import DataFrame, Series
-from typing import Tuple, List, Dict, Callable, Set
+from typing import Tuple, List, Dict, Callable, Set, cast
 from sklearn.neighbors import KernelDensity
 from collections import defaultdict
 from dataclasses import dataclass
@@ -55,7 +55,7 @@ class XNB:
         x, y, kernel, algorithm, bw_dict, n_sample, class_values)
     ranking = self._calculate_divergence(kde_list)
     self._calculate_feature_selection(ranking, class_values)
-    # self._calculate_necessary_kde(X, y)
+    # self._calculate_necessary_kde(x, y)
 
     self._calculate_target_representation(y, class_values)
 
@@ -64,7 +64,7 @@ class XNB:
 
   def _calculate_bandwidth(
       self,
-      X: DataFrame,
+      x: DataFrame,
       y: Series,
       bw_function: BandwidthFunction,
       n_sample: int,
@@ -74,16 +74,16 @@ class XNB:
 
     for class_value in class_values:
       bw_dict[class_value] = {}
-      d = X[y == class_value]
-      for feature in X.columns:
-        bw = bw_function.value(d[feature], n_sample)
+      d = x[y == class_value]
+      for feature in x.columns:
+        bw = bw_function(d[feature], n_sample)
         bw_dict[class_value][feature] = bw
 
     return bw_dict
 
   def _calculate_kdes(
       self,
-      X: DataFrame,
+      x: DataFrame,
       y: Series,
       kernel: Kernel,
       algorithm: Algorithm,
@@ -94,10 +94,10 @@ class XNB:
     kde_list = []
 
     for class_value in class_values:
-      data_class = X[y == class_value]
-      for feature in X.columns:
+      data_class = x[y == class_value]
+      for feature in x.columns:
         # Calculate x_points
-        data_var = X[feature]
+        data_var = x[feature]
         minimum, maximum = data_var.min(), data_var.max()
         x_points = np.linspace(minimum, maximum, n_sample)
         bw = bw_dict[class_value][feature]
@@ -128,7 +128,7 @@ class XNB:
       self,
       kde_list: List[KDE]
   ) -> DataFrame:
-    kde_dict = defaultdict(List[KDE])
+    kde_dict = defaultdict(list[KDE])
 
     for kde in kde_list:
       kde_dict[kde.feature].append(kde)
@@ -157,7 +157,10 @@ class XNB:
 
   @staticmethod
   def _hellinger_distance(p: List[float], q: List[float]) -> float:
-    s = sum([sqrt(a * b) for a, b in zip(p, q)])
+    try:
+      s = sum([sqrt(a * b) for a, b in zip(p, q)])
+    except Exception:
+      s = 0.0
     s = max(0, min(1, s))
     return sqrt(1 - s)
 
@@ -166,30 +169,41 @@ class XNB:
     s = sum(data)
     norm_data = [x / s if s != 0 else 0 for x in data]
     diff = 1 - sum(norm_data)
-    norm_data[-1] += diff
+    if diff < 0:
+      i = len(norm_data) - 1
+      while diff < 0 and i >= 0:
+        if norm_data[i] + diff >= 0:
+          norm_data[i] += diff
+          diff = 0
+        else:
+          diff += norm_data[i]
+          norm_data[i] = 0
+        i -= 1
+    else:
+      norm_data[-1] += diff
     return norm_data
 
-  # @staticmethod
-  # def _normalize_2(data: List) -> List:
-  #   s = sum(data)
-  #   if s > 0:
-  #     data = [data[i] / s for i in range(len(data))]
-  #   else:
-  #     data = [1.0 / len(data) for i in range(len(data))]
-  #   s = sum(data)
-  #   while s > 1.0:
-  #     data = [data[i] / s for i in range(len(data))]
-  #     s = sum(data)
-  #   return data
+  @staticmethod
+  def _normalize2(data: List) -> List:
+    s = sum(data)
+    if s > 0:
+      data = [data[i] / s for i in range(len(data))]
+    else:
+      data = [1.0 / len(data) for i in range(len(data))]
+    s = sum(data)
+    while s > 1.0:
+      data = [data[i] / s for i in range(len(data))]
+      s = sum(data)
+    return data
 
   def _calculate_feature_selection(
           self,
           ranking: DataFrame,
           class_values: set
-  ) -> None:
+  ) -> Dict[str, str]:
     threshold = 0.999
     stop_dict = defaultdict(dict[str, bool])
-    hellinger_dict = defaultdict(dict)
+    hellinger_dict = defaultdict(set)
     for cv_1, cv_2 in product(class_values, repeat=2):
       if cv_1 != cv_2:
         stop_dict[cv_1][cv_2] = False
@@ -219,9 +233,12 @@ class XNB:
             class_b=class_1
         )
 
-    # for d in dict_result:
-    #   self.feature_selection_dict[d] = set(
-    #       map(lambda x: x.split(' || ')[1], dict_result[d].keys()))
+    self.feature_selection_dict = defaultdict(set[str])
+    for class_value in hellinger_dict.keys():
+      self.feature_selection_dict[class_value] = {
+          cfd.feature for cfd in hellinger_dict[class_value]
+      }
+    return cast(Dict[str, str], self.feature_selection_dict)
 
   @staticmethod
   def _calculate_feature_selection_dict(
@@ -232,7 +249,10 @@ class XNB:
           threshold: float,
           class_a: str,
           class_b: str
-  ) -> Tuple[Dict, Dict]:
+  ) -> Tuple[
+      Dict[str, Set[_ClassFeatureDistance]],
+      Dict[str, Dict[str, bool]]
+  ]:
     """
     @param hellinger_dict:
     @param stop_dict:
@@ -252,9 +272,9 @@ class XNB:
               distance=hellinger
           )
       )
-      not_in_dict = class_a not in [
+      not_in_dict = class_a not in {
           x.class_value for x in hellinger_dict[class_b]
-      ]
+      }
       if not_in_dict:
         stop_dict[class_a][class_b] = hellinger >= threshold
       else:
@@ -273,7 +293,7 @@ class XNB:
   ) -> Dict:
     class_representation = {}
     for class_value in class_values:
-      target_count = target_col.count(class_value)
+      target_count = target_col.value_counts().get(class_value, 0)
       total_count = len(target_col)
       class_representation[class_value] = target_count / total_count
     return class_representation
