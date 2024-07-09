@@ -39,6 +39,16 @@ class XNB:
   def __init__(self) -> None:
     pass
 
+  @property
+  def feature_selection_dict(self) -> Dict[str, Set[str]]:
+    if hasattr(self, '_feature_selection_dict'):
+      return self._feature_selection_dict
+    else:
+      raise NotFittedError((
+          'This XNB instance is not fitted yet.',
+          ' Call "fit" with appropriate arguments before using this estimator.'
+      ))
+
   def fit(
       self,
       x: DataFrame,
@@ -55,12 +65,50 @@ class XNB:
         x, y, kernel, algorithm, bw_dict, n_sample, class_values)
     ranking = self._calculate_divergence(kde_list)
     self._calculate_feature_selection(ranking, class_values)
-    # self._calculate_necessary_kde(x, y)
-
+    self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
     self._calculate_target_representation(y, class_values)
 
-  def predict(self, x: DataFrame) -> Series:
-    pass
+  def predict(self, x: DataFrame) -> np.ndarray:
+
+    cond1 = not hasattr(self, '_kernel_density_dict')
+    cond2 = not hasattr(self, '_class_representation')
+
+    if cond1 or cond2:
+      raise NotFittedError((
+          'This XNB instance is not fitted yet.',
+          ' Call "fit" with appropriate arguments before using this estimator.'
+      ))
+
+    y_pred = []
+    for _, row in x.iterrows():
+      # Calculating the probability of each class
+      y, m, s = None, -np.inf, 0
+      # Running through the final variables
+      for c, variables in self.feature_selection_dict.items():
+        pr = 0
+        for v in variables:
+          # We get the probabilities with KDE. Instead of x_sample (50) records,
+          # we pass this time only one
+          k = self._kernel_density_dict[c][v].score_samples(
+              np.array([row[v]])[:, np.newaxis])[0]
+          pr = pr + k
+        # The last operand is the number of times a record with that class
+        # is given in the train dataset
+        probability = pr + np.log(self._class_representation[c])
+        s += probability
+        # We save the class with a higher probability
+        if probability > m:
+          m, y = probability, c
+
+      if s > -np.inf:
+        y_pred.append(y)
+      else:
+        # If none of the classes has a probability greater than zero,
+        # we assign the class that is most representative of the train dataset
+        k = max(self._class_representation, key=self._class_representation.get)
+        y_pred.append((self._class_representation[k]))
+
+    return np.array(y_pred)
 
   def _calculate_bandwidth(
       self,
@@ -142,8 +190,8 @@ class XNB:
           t2 = kde_dict[feature][index_2].target_value
           f2 = kde_dict[feature][index_2].feature
           if t1 != t2 and f1 == f2:
-            p = self._normalize(kde_dict[feature][index_1].y_points)
-            q = self._normalize(kde_dict[feature][index_2].y_points)
+            p = self._normalize2(kde_dict[feature][index_1].y_points)
+            q = self._normalize2(kde_dict[feature][index_2].y_points)
             hellinger = self._hellinger_distance(p, q)
             scores.append([f1, t1, t2, hellinger])
 
@@ -152,7 +200,7 @@ class XNB:
         columns=['feature', 'p0', 'p1', 'hellinger']
     ).drop_duplicates().sort_values(
         by=['hellinger', 'feature', 'p0', 'p1'],
-        ascending=False
+        ascending=[False, True, True, True]
     )
 
   @staticmethod
@@ -200,7 +248,7 @@ class XNB:
           self,
           ranking: DataFrame,
           class_values: set
-  ) -> Dict[str, str]:
+  ) -> Dict[str, Set[str]]:
     threshold = 0.999
     stop_dict = defaultdict(dict[str, bool])
     hellinger_dict = defaultdict(set)
@@ -233,12 +281,13 @@ class XNB:
             class_b=class_1
         )
 
-    self.feature_selection_dict = defaultdict(set[str])
+    self._feature_selection_dict = defaultdict(set[str])
     for class_value in hellinger_dict.keys():
-      self.feature_selection_dict[class_value] = {
+      self._feature_selection_dict[class_value] = {
           cfd.feature for cfd in hellinger_dict[class_value]
       }
-    return cast(Dict[str, str], self.feature_selection_dict)
+    self._feature_selection_dict = dict(self._feature_selection_dict)
+    return self._feature_selection_dict
 
   @staticmethod
   def _calculate_feature_selection_dict(
@@ -253,25 +302,7 @@ class XNB:
       Dict[str, Set[_ClassFeatureDistance]],
       Dict[str, Dict[str, bool]]
   ]:
-    """
-    @param hellinger_dict:
-    @param stop_dict:
-    @param feature:
-    @param hellinger:
-    @param threshold:
-    @param class_a:
-    @param class_b:
-    @return:
-    """
-
     if not stop_dict[class_a][class_b]:
-      hellinger_dict[class_b].add(
-          _ClassFeatureDistance(
-              class_value=class_a,
-              feature=feature,
-              distance=hellinger
-          )
-      )
       not_in_dict = class_a not in {
           x.class_value for x in hellinger_dict[class_b]
       }
@@ -284,6 +315,13 @@ class XNB:
             p *= (1 - x.distance)
         stop_dict[class_a][class_b] = (1 - (p * (1 - hellinger))) >= threshold
 
+      hellinger_dict[class_b].add(
+          _ClassFeatureDistance(
+              class_value=class_a,
+              feature=feature,
+              distance=hellinger
+          )
+      )
     return hellinger_dict, stop_dict
 
   def _calculate_target_representation(
@@ -291,9 +329,40 @@ class XNB:
       target_col: Series,
       class_values: Set
   ) -> Dict:
-    class_representation = {}
+    self._class_representation = {}
     for class_value in class_values:
       target_count = target_col.value_counts().get(class_value, 0)
       total_count = len(target_col)
-      class_representation[class_value] = target_count / total_count
-    return class_representation
+      self._class_representation[class_value] = target_count / total_count
+    return self._class_representation
+
+  def _calculate_necessary_kde(
+      self,
+      x: DataFrame,
+      y: Series,
+      bw_dict: Dict[str, Dict[str, float]],
+      kernel: Kernel,
+      algorithm: Algorithm
+  ) -> Dict:
+    self._kernel_density_dict = {}
+    for c, variables in self._feature_selection_dict.items():
+      data_class = x[y == c]
+      self._kernel_density_dict[c] = {}
+      for v in variables:
+        data = data_class[v]
+        bw = bw_dict[c][v]
+        kde = KernelDensity(
+            kernel=kernel.value,
+            bandwidth=bw,
+            algorithm=algorithm.value
+        ).fit(data.values[:, np.newaxis])
+        self._kernel_density_dict[c][v] = kde
+
+    return self._kernel_density_dict
+
+
+class NotFittedError(ValueError, AttributeError):
+  """Exception class to raise if estimator is used before fitting.
+  This class inherits from both ValueError and AttributeError to help with
+  exception handling and backward compatibility.
+  """

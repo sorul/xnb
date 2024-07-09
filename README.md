@@ -11,11 +11,11 @@ import pandas as pd
 ''' 1. Read the dataset. '''
 df = pd.read_csv("data/iris.csv")
 X, y = df.iloc[:, 0:-1], df.iloc[:,-1]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=0)
+x_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=0)
 
 ''' 2. By calling the fit() function, we prepare the class to be able to make the prediction later. '''
 xnb = XNB()
-xnb.fit(X_train, y_train)
+xnb.fit(x_train, y_train)
 
 ''' 3. When the fit() function finishes, we can now access the feature selection it has calculated. '''
 feature_selection = xnb.feature_selection_dict
@@ -42,7 +42,7 @@ print(accuracy_score(y_test, y_pred))
 ### 2.2 Functions
 
 ```
-xnb.fit(X_train, y_train)
+xnb.fit(x_train, y_train)
 ```
 This function prepares the XNB class object to generate the dictionary with the best variables to predict each class.
 
@@ -50,7 +50,7 @@ This function prepares the XNB class object to generate the dictionary with the 
 
 | Name   | Type | Description |
 | ----------- | ----------- | ----------- |
-| X_train | Pandas.DataFrame | Training data, only feature columns |
+| x_train | Pandas.DataFrame | Training data, only feature columns |
 | y_train | Pandas.Series | Training target values |
 
 <b>Returns:</b> None

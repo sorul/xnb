@@ -1,5 +1,7 @@
+import pickle
 import pandas as pd
 import numpy as np
+import json
 from sklearn.neighbors import KernelDensity
 # import multiprocessing
 # import multiprocessing.managers
@@ -184,10 +186,10 @@ class XNB():
       progressBar.next()
 
     ranking = pd.DataFrame(
-        scores, columns=['variable', 'p0', 'p1', 'hellinger']).drop_duplicates()
+        scores, columns=['feature', 'p0', 'p1', 'hellinger']).drop_duplicates()
     ranking = ranking.sort_values(
-        by=['hellinger', 'variable', 'p0', 'p1'], ascending=False)
-    ranking.to_csv("data/ranking.csv")
+        by=['hellinger', 'feature', 'p0', 'p1'], ascending=[False, True, True, True])
+    ranking.to_csv("data/ranking.csv", index=False)
 
     self._ranking_divergence = ranking
     fin = time.time()
@@ -207,19 +209,21 @@ class XNB():
           finished_class[c][c2] = False
 
     for _, row in self._ranking_divergence.iterrows():
-      variable = row.variable
+      feature = row.feature
       class_1 = row.p0
       class_2 = row.p1
       hellinger = row.hellinger
       if hellinger > 0.5:
         dict_result, finished_class = self._addDict(dict_result, class_1, class_2,
-                                                    variable, hellinger, finished_class,
+                                                    feature, hellinger, finished_class,
                                                     threshold)
         dict_result, finished_class = self._addDict(dict_result, class_2, class_1,
-                                                    variable, hellinger, finished_class,
+                                                    feature, hellinger, finished_class,
                                                     threshold)
       progressBar.next()
 
+    with open('data/dict_result.json', 'wb') as fp:
+      pickle.dump(dict_result, fp)
     for d in dict_result:
       self.feature_selection_dict[d] = set(
           map(lambda x: x.split(' || ')[1], dict_result[d].keys()))

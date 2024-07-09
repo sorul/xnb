@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 from itertools import product
 from sklearn.neighbors import KernelDensity
+from sklearn.metrics import accuracy_score
 import itertools
 import pytest
 import time
@@ -44,26 +45,26 @@ def test_accuracy_benchmark_naive_bayes():
   skf = model_selection.StratifiedKFold(
       n_splits=5, shuffle=True, random_state=0)
   for train_index, test_index in skf.split(x, y):
-    X_train, X_test = x.iloc[train_index], x.iloc[test_index]
+    x_train, X_test = x.iloc[train_index], x.iloc[test_index]
     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
     # EXPLICABLE NB
     xnb = XNB()
-    xnb.fit(X_train, y_train)
+    xnb.fit(x_train, y_train)
     feature_selection = xnb.feature_selection_dict
     y_pred = xnb.predict(X_test)
     accuracy_list['xnb'].append(accuracy_score(y_test, y_pred))
 
     # ORIGINAL NB
     nb = GaussianNB()
-    nb.fit(X_train, y_train)
+    nb.fit(x_train, y_train)
     y_pred = nb.predict(X_test)
     accuracy_list['nb1'].append(accuracy_score(y_test, y_pred))
 
     # FEATURE SELECTION NB
     new_cols = list({x for v in feature_selection.values() for x in v})
     nb = GaussianNB()
-    nb.fit(X_train[new_cols], y_train)
+    nb.fit(x_train[new_cols], y_train)
     y_pred = nb.predict(X_test[new_cols])
     accuracy_list['nb2'].append(accuracy_score(y_test, y_pred))
     n_features_selected.append(len(new_cols))
@@ -246,6 +247,52 @@ def test_calculate_feature_selection_dict(benchmark):
   )
   assert len(hellinger_dict) > 0
   assert len(stop_dict) > 0
+
+
+def test_compare_to_jesus():
+  """
+  > poetry run pytest -k test_calculate_feature_selection_dict -v
+  """
+  x, y = load_dataset(Path('data/Breast_GSE45827.csv'),
+                      class_column='type', n_cols=2000)
+  x_train = x.sample(frac=0.8, random_state=1)
+  y_train = y[x_train.index]
+  x_test = x.drop(x_train.index)
+  y_test = y[x_test.index]
+
+  # JESUS EXPLICABLE NB
+  from xnb_jesus.explicable_naive_bayes import XNB
+  xnb = XNB()
+  xnb.fit(x_train, y_train)
+  feature_selection_2 = xnb.feature_selection_dict
+  y_pred_2 = xnb.predict(x_test)
+
+  # EXPLICABLE NB
+  from xnb.explicable_naive_bayes import XNB
+  xnb = XNB()
+  xnb.fit(x_train, y_train)
+  feature_selection_1 = xnb.feature_selection_dict
+  y_pred_1 = xnb.predict(x_test)
+
+  assert list(y_pred_1) == list(y_pred_2)
+  assert dict(feature_selection_1) == dict(feature_selection_2)
+
+
+def test_predict(benchmark):
+  """
+  > poetry run pytest -k test_predict -v
+  """
+  x, y = load_dataset(Path('data/iris.csv'))
+  x_train = x.sample(frac=0.8, random_state=1)
+  y_train = y[x_train.index]
+  x_test = x.drop(x_train.index)
+  y_test = y[x_test.index]
+
+  xnb = XNB()
+  xnb.fit(x_train, y_train)
+  y_pred = benchmark(xnb.predict, x_test)
+
+  assert len(y_pred) == len(y_test)
 
 
 def load_dataset(
