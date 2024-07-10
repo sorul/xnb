@@ -22,21 +22,21 @@ __all__ = [
 ]
 
 
-def wmean(x, w):
+def _wmean(x, w):
   '''
   Weighted mean
   '''
   return sum(x * w) / float(sum(w))
 
 
-def wvar(x, w):
+def _wvar(x, w):
   '''
   Weighted variance
   '''
-  return sum(w * (x - wmean(x, w)) ** 2) / float(sum(w) - 1)
+  return sum(w * (x - _wmean(x, w)) ** 2) / float(sum(w) - 1)
 
 
-def dnorm(x):
+def _dnorm(x):
   return norm.pdf(x, 0.0, 1.0)
 
 
@@ -57,7 +57,7 @@ def _select_sigma(x):
   """
   # normalize = norm.ppf(.75) - norm.ppf(.25)
   normalize = 1.349
-  IQR = (scoreatpercentile(x, 75) - scoreatpercentile(x, 25)) / normalize
+  IQR = (_scoreatpercentile(x, 75) - _scoreatpercentile(x, 25)) / normalize
   std_dev = np.std(x, axis=0, ddof=1)
   if IQR > 0:
     return np.minimum(std_dev, IQR)
@@ -67,7 +67,7 @@ def _select_sigma(x):
     return 0.0000001
 
 
-def empiricalcdf(data, method='Hazen'):
+def _empiricalcdf(data, method='Hazen'):
   """Return the empirical cdf.
   Methods available:
       Hazen:       (i-0.5)/N
@@ -82,6 +82,7 @@ def empiricalcdf(data, method='Hazen'):
   i = np.argsort(np.argsort(data)) + 1.
   N = len(data)
   method = method.lower()
+  # TODO: merece la pena tener todas estas opciones?
   if method == 'hazen':
     cdf = (i-0.5)/N
   elif method == 'weibull':
@@ -101,15 +102,15 @@ def empiricalcdf(data, method='Hazen'):
   return cdf
 
 
-def scoreatpercentile(data, percentile):
+def _scoreatpercentile(data, percentile):
   """Return the score at the given percentile of the data.
   Example:
       >>> data = randn(100)
-          >>> scoreatpercentile(data, 50)
+          >>> _scoreatpercentile(data, 50)
       will return the median of sample `data`.
   """
   per = np.array(percentile)
-  cdf = empiricalcdf(data)
+  cdf = _empiricalcdf(data)
   interpolator = interpolate.interp1d(np.sort(cdf), np.sort(data))
   return interpolator(per/100.)
 
@@ -157,14 +158,14 @@ def hnorm(x, weights=None) -> float:
   n = float(sum(weights))
 
   if len(x.shape) == 1:
-    sd = np.sqrt(wvar(x, weights))
+    sd = np.sqrt(_wvar(x, weights))
     return sd * (4 / (3 * n)) ** (1 / 5.0)
 
   # TODO: make this work for more dimensions
   # ((4 / (p + 2) * n)^(1 / (p+4)) * sigma_i
   if len(x.shape) == 2:
     ndim = x.shape[1]
-    sd = np.sqrt(np.apply_along_axis(wvar, 1, x, weights))
+    sd = np.sqrt(np.apply_along_axis(_wvar, 1, x, weights))
     return (4.0 / ((ndim + 2.0) * n) ** (1.0 / (ndim + 4.0))) * sd
 
   return 0.0
@@ -182,7 +183,7 @@ def hsj(x, x_sample):
   '''
 
   h0 = hnorm(x)
-  v0 = sj(x, h0)
+  v0 = _sj(x, h0)
 
   if v0 > 0:
     hstep = 1.1
@@ -190,18 +191,18 @@ def hsj(x, x_sample):
     hstep = 0.9
 
   h1 = h0 * hstep
-  v1 = sj(x, h1)
+  v1 = _sj(x, h1)
 
   while v1 * v0 > 0:
     h0 = h1
     v0 = v1
     h1 = h0 * hstep
-    v1 = sj(x, h1)
+    v1 = _sj(x, h1)
 
   return h0 + (h1 - h0) * abs(v0) / (abs(v0) + abs(v1))
 
 
-def sj(x, h):
+def _sj(x, h):
   '''
   Equation 12 of Sheather and Jones [1]_
 
@@ -211,8 +212,8 @@ def sj(x, h):
       density estimation. Simon J. Sheather and Michael C. Jones.
       Journal of the Royal Statistical Society, Series B. 1991
   '''
-  def phi6(x): return (x ** 6 - 15 * x ** 4 + 45 * x ** 2 - 15) * dnorm(x)
-  def phi4(x): return (x ** 4 - 6 * x ** 2 + 3) * dnorm(x)
+  def phi6(x): return (x ** 6 - 15 * x ** 4 + 45 * x ** 2 - 15) * _dnorm(x)
+  def phi4(x): return (x ** 4 - 6 * x ** 2 + 3) * _dnorm(x)
 
   n = len(x)
   one = np.ones((1, n))

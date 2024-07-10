@@ -25,13 +25,10 @@ class _ClassFeatureDistance:
   def __hash__(self):
     return hash(self.class_value + self.feature)
 
-  def __eq__(self, other):
-    if isinstance(other, _ClassFeatureDistance):
-      return self.class_value + self.feature == other.class_value + self.feature
-    return False
-
-  # def __str__(self) -> str:
-  #   return f'{self.class_value} || {self.feature}'
+  # def __eq__(self, other):
+  #   if isinstance(other, _ClassFeatureDistance):
+  #     return self.class_value + self.feature == other.class_value + self.feature
+  #   return False
 
 
 class XNB:
@@ -202,7 +199,7 @@ class XNB:
   def _hellinger_distance(p: List[float], q: List[float]) -> float:
     try:
       s = sum([sqrt(a * b) for a, b in zip(p, q)])
-    except Exception:
+    except ValueError:
       s = 0.0
     s = max(0, min(1, s))
     return sqrt(1 - s)

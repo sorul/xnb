@@ -10,29 +10,9 @@ from sklearn.neighbors import KernelDensity
 from sklearn.metrics import accuracy_score
 import itertools
 import pytest
-import time
 
-from xnb.explicable_naive_bayes import XNB, KDE
+from xnb.explicable_naive_bayes import XNB, KDE, NotFittedError
 from xnb.enum import BandwidthFunction, Kernel, Algorithm
-# from xnb_cayetano.explicable_naive_bayes import XNB
-# from xnb_cayetano._kde_object import KDE
-
-
-def getKDES(x: pd.DataFrame, y: pd.Series) -> list[KDE]:
-  comb = list(itertools.product(x.columns, list(set(y))))
-  kde_list = []
-  x_points = [i for i in range(10)]
-  y_points = x_points
-  dummy_kde = KernelDensity(kernel='gaussian', bandwidth=0.1)
-  for v, c in comb:
-    kde_list.append(KDE(
-        feature=v,
-        target_value=c,
-        kernel_density=dummy_kde,
-        x_points=x_points,
-        y_points=y_points
-    ))
-  return kde_list
 
 
 def test_accuracy_benchmark_naive_bayes():
@@ -107,8 +87,11 @@ def test_calculate_bw_function(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  d = benchmark(
-      xnb._calculate_bandwidth,
+  # d = benchmark(
+  #     xnb._calculate_bandwidth,
+  #     x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+  # )
+  d = xnb._calculate_bandwidth(
       x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
   )
 
@@ -124,8 +107,11 @@ def test_calculate_bandwidth_best_estimator(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  d = benchmark(
-      xnb._calculate_bandwidth,
+  # d = benchmark(
+  #     xnb._calculate_bandwidth,
+  #     x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+  # )
+  d = xnb._calculate_bandwidth(
       x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
   )
 
@@ -136,8 +122,11 @@ def test_calculate_bandwidth_hscott(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  d = benchmark(
-      xnb._calculate_bandwidth,
+  # d = benchmark(
+  #     xnb._calculate_bandwidth,
+  #     x, y, BandwidthFunction.HSCOTT, 50, set(y)
+  # )
+  d = xnb._calculate_bandwidth(
       x, y, BandwidthFunction.HSCOTT, 50, set(y)
   )
 
@@ -148,8 +137,11 @@ def test_calculate_bandwidth_hsilverman(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  d = benchmark(
-      xnb._calculate_bandwidth,
+  # d = benchmark(
+  #     xnb._calculate_bandwidth,
+  #     x, y, BandwidthFunction.HSILVERMAN, 50, set(y)
+  # )
+  d = xnb._calculate_bandwidth(
       x, y, BandwidthFunction.HSILVERMAN, 50, set(y)
   )
 
@@ -160,8 +152,11 @@ def test_calculate_bandwidth_hjs(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  d = benchmark(
-      xnb._calculate_bandwidth,
+  # d = benchmark(
+  #     xnb._calculate_bandwidth,
+  #     x, y, BandwidthFunction.HSJ, 50, set(y)
+  # )
+  d = xnb._calculate_bandwidth(
       x, y, BandwidthFunction.HSJ, 50, set(y)
   )
 
@@ -178,8 +173,11 @@ def test_calculate_kde(benchmark):
       x, y, BandwidthFunction.HSJ, 50, set(y)
   )
 
-  kde_list = benchmark(
-      xnb._calculate_kdes,
+  # kde_list = benchmark(
+  #     xnb._calculate_kdes,
+  #     x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
+  # )
+  kde_list = xnb._calculate_kdes(
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
   )
 
@@ -199,7 +197,8 @@ def test_calculate_divergence(benchmark):
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
   )
 
-  ranking = benchmark(xnb._calculate_divergence, kde_list)
+  # ranking = benchmark(xnb._calculate_divergence, kde_list)
+  ranking = xnb._calculate_divergence(kde_list)
 
   assert len(ranking) > 0
 
@@ -218,7 +217,8 @@ def test_calculate_feature_selection(benchmark):
   )
   ranking = xnb._calculate_divergence(kde_list)
 
-  d = benchmark(xnb._calculate_feature_selection, ranking, set(y))
+  # d = benchmark(xnb._calculate_feature_selection, ranking, set(y))
+  d = xnb._calculate_feature_selection(ranking, set(y))
 
   assert sorted(list(d.keys())) == sorted(list(set(y)))
 
@@ -235,8 +235,17 @@ def test_calculate_feature_selection_dict(benchmark):
     if cv_1 != cv_2:
       stop_dict[cv_1][cv_2] = False
 
-  hellinger_dict, stop_dict = benchmark(
-      xnb._calculate_feature_selection_dict,
+  # hellinger_dict, stop_dict = benchmark(
+  #     xnb._calculate_feature_selection_dict,
+  #     hellinger_dict,
+  #     stop_dict,
+  #     feature='petal_length',
+  #     hellinger=0.999,
+  #     threshold=0.05,
+  #     class_a='virginica',
+  #     class_b='versicolor'
+  # )
+  hellinger_dict, stop_dict = xnb._calculate_feature_selection_dict(
       hellinger_dict,
       stop_dict,
       feature='petal_length',
@@ -290,7 +299,8 @@ def test_predict(benchmark):
 
   xnb = XNB()
   xnb.fit(x_train, y_train)
-  y_pred = benchmark(xnb.predict, x_test)
+  # y_pred = benchmark(xnb.predict, x_test)
+  y_pred = xnb.predict(x_test)
 
   assert len(y_pred) == len(y_test)
 
@@ -306,3 +316,45 @@ def load_dataset(
   x = df.drop(class_column, axis=1)
   x = x[list(x.columns)[:n_cols]]
   return x, y
+
+
+def test_NotFittedError():
+  """
+  > poetry run pytest -k test_NotFittedError -v
+  """
+  x, _ = load_dataset(Path('data/iris.csv'))
+  xnb = XNB()
+  with pytest.raises(NotFittedError):
+    xnb.predict(x)
+  with pytest.raises(NotFittedError):
+    xnb.feature_selection_dict
+
+
+def test_hellinger_distance():
+  """
+  > poetry run pytest -k test_hellinger_distance -v
+  """
+  # Test case 1: Equal lists
+  p = [0.2, 0.3, 0.5]
+  q = [0.2, 0.3, 0.5]
+  assert XNB._hellinger_distance(p, q) == 0.0
+
+  # Test case 2: Different lists
+  p = [0.1, 0.2, 0.7]
+  q = [0.3, 0.4, 0.3]
+  assert round(XNB._hellinger_distance(p, q), 2) == 0.29
+
+  # Test case 3: One empty list
+  p = []
+  q = [0.5, 0.5]
+  assert XNB._hellinger_distance(p, q) == 1.0
+
+  # Test case 4: Both lists empty
+  p = []
+  q = []
+  assert XNB._hellinger_distance(p, q) == 1.0
+
+  # Test case 5: Negative values
+  p = [-0.1, 0.6, 0.5]
+  q = [0.2, 0.3, 0.5]
+  assert XNB._hellinger_distance(p, q) == 1.0
