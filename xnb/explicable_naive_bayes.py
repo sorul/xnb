@@ -44,10 +44,7 @@ class XNB:
     if hasattr(self, '_feature_selection_dict'):
       return self._feature_selection_dict
     else:
-      raise NotFittedError((
-          'This XNB instance is not fitted yet.',
-          ' Call "fit" with appropriate arguments before using this estimator.'
-      ))
+      raise NotFittedError()
 
   def fit(
       self,
@@ -74,31 +71,27 @@ class XNB:
     cond2 = not hasattr(self, '_class_representation')
 
     if cond1 or cond2:
-      raise NotFittedError((
-          'This XNB instance is not fitted yet.',
-          ' Call "fit" with appropriate arguments before using this estimator.'
-      ))
+      raise NotFittedError()
 
     y_pred = []
     for _, row in x.iterrows():
       # Calculating the probability of each class
       y, m, s = None, -np.inf, 0
-      # Running through the final variables
-      for c, variables in self.feature_selection_dict.items():
+      # Running through the final features
+      for class_value, features in self.feature_selection_dict.items():
         pr = 0
-        for v in variables:
+        for feature in features:
           # We get the probabilities with KDE. Instead of x_sample (50) records,
           # we pass this time only one
-          k = self._kernel_density_dict[c][v].score_samples(
-              np.array([row[v]])[:, np.newaxis])[0]
-          pr = pr + k
+          pr += self._kernel_density_dict[class_value][feature].score_samples(
+              np.array([row[feature]])[:, np.newaxis])[0]
         # The last operand is the number of times a record with that class
         # is given in the train dataset
-        probability = pr + np.log(self._class_representation[c])
+        probability = pr + np.log(self._class_representation[class_value])
         s += probability
         # We save the class with a higher probability
         if probability > m:
-          m, y = probability, c
+          m, y = probability, class_value
 
       if s > -np.inf:
         y_pred.append(y)
@@ -195,13 +188,15 @@ class XNB:
             hellinger = self._hellinger_distance(p, q)
             scores.append([f1, t1, t2, hellinger])
 
-    return DataFrame(
+    ranking = DataFrame(
         scores,
         columns=['feature', 'p0', 'p1', 'hellinger']
     ).drop_duplicates().sort_values(
         by=['hellinger', 'feature', 'p0', 'p1'],
         ascending=[False, True, True, True]
     )
+    ranking = ranking[ranking.hellinger > 0.5].reset_index(drop=True)
+    return ranking
 
   @staticmethod
   def _hellinger_distance(p: List[float], q: List[float]) -> float:
@@ -261,25 +256,24 @@ class XNB:
       class_1 = row.p0
       class_2 = row.p1
       hellinger = row.hellinger
-      if hellinger > 0.5:
-        hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
-            hellinger_dict,
-            stop_dict,
-            feature,
-            hellinger,
-            threshold,
-            class_a=class_1,
-            class_b=class_2
-        )
-        hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
-            hellinger_dict,
-            stop_dict,
-            feature,
-            hellinger,
-            threshold,
-            class_a=class_2,
-            class_b=class_1
-        )
+      hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
+          hellinger_dict,
+          stop_dict,
+          feature,
+          hellinger,
+          threshold,
+          class_a=class_1,
+          class_b=class_2
+      )
+      hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
+          hellinger_dict,
+          stop_dict,
+          feature,
+          hellinger,
+          threshold,
+          class_a=class_2,
+          class_b=class_1
+      )
 
     self._feature_selection_dict = defaultdict(set[str])
     for class_value in hellinger_dict.keys():
@@ -345,18 +339,18 @@ class XNB:
       algorithm: Algorithm
   ) -> Dict:
     self._kernel_density_dict = {}
-    for c, variables in self._feature_selection_dict.items():
-      data_class = x[y == c]
-      self._kernel_density_dict[c] = {}
-      for v in variables:
-        data = data_class[v]
-        bw = bw_dict[c][v]
+    for class_value, features in self._feature_selection_dict.items():
+      data_class = x[y == class_value]
+      self._kernel_density_dict[class_value] = {}
+      for feature in features:
+        data = data_class[feature]
+        bw = bw_dict[class_value][feature]
         kde = KernelDensity(
             kernel=kernel.value,
             bandwidth=bw,
             algorithm=algorithm.value
         ).fit(data.values[:, np.newaxis])
-        self._kernel_density_dict[c][v] = kde
+        self._kernel_density_dict[class_value][feature] = kde
 
     return self._kernel_density_dict
 
@@ -366,3 +360,15 @@ class NotFittedError(ValueError, AttributeError):
   This class inherits from both ValueError and AttributeError to help with
   exception handling and backward compatibility.
   """
+
+  def __init__(
+      self,
+      message=(
+          'This XNB instance is not fitted yet.',
+          ' Call "fit" with appropriate arguments before using this estimator.'
+      )
+  ):
+    self.message = message
+
+  def __str__(self):
+    return self.message

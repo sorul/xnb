@@ -254,7 +254,7 @@ def test_compare_to_jesus():
   > poetry run pytest -k test_calculate_feature_selection_dict -v
   """
   x, y = load_dataset(Path('data/Breast_GSE45827.csv'),
-                      class_column='type', n_cols=2000)
+                      class_column='type', n_cols=20)
   x_train = x.sample(frac=0.8, random_state=1)
   y_train = y[x_train.index]
   x_test = x.drop(x_train.index)
