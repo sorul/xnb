@@ -161,7 +161,6 @@ cython_debug/
 # Folders
 data/*
 !data/iris.csv
-.vscode
 .benchmarks/
 
 # Files

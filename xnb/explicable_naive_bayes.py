@@ -1,8 +1,8 @@
+"""Explicable Naive Bayes."""
 from pandas import DataFrame, Series
-from typing import Tuple, List, Dict, Callable, Set, cast
+from typing import Tuple, List, Dict, Set
 from sklearn.neighbors import KernelDensity
 from collections import defaultdict
-from dataclasses import dataclass
 from itertools import product
 from math import sqrt
 import numpy as np
@@ -25,19 +25,16 @@ class _ClassFeatureDistance:
   def __hash__(self):
     return hash(self.class_value + self.feature)
 
-  # def __eq__(self, other):
-  #   if isinstance(other, _ClassFeatureDistance):
-  #     return self.class_value + self.feature == other.class_value + self.feature
-  #   return False
-
 
 class XNB:
-
-  def __init__(self) -> None:
-    pass
+  """Class to perform Explainable Naive Bayes."""
 
   @property
   def feature_selection_dict(self) -> Dict[str, Set[str]]:
+    """Obtain the feature selection dictionary.
+
+    Each target class (key) is associated with a set of features (values).
+    """
     if hasattr(self, '_feature_selection_dict'):
       return self._feature_selection_dict
     else:
@@ -52,6 +49,20 @@ class XNB:
       algorithm: Algorithm = Algorithm.AUTO,
       n_sample: int = 50
   ) -> None:
+    """Calculate the best feature selection to be able to predict later.
+
+    ## Args:
+    :param x: DataFrame containing the input features
+    :param y: Series containing the target variable
+    :param bw_function: Bandwidth function to use, defaults to
+    BandwidthFunction.HSCOTT
+    :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
+    :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
+    :param n_sample: Number of samples to use, defaults to 50
+
+    ## Returns:
+    :return: None
+    """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
         x, y, bw_function, n_sample, class_values)
@@ -63,7 +74,14 @@ class XNB:
     self._calculate_target_representation(y, class_values)
 
   def predict(self, x: DataFrame) -> np.ndarray:
+    """Return the predicted class for each row in the DataFrame.
 
+    ## Args:
+    :param x: DataFrame containing the input to predict
+
+    ## Returns:
+    :return: Numpy array containing the predicted class for each row
+    """
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
 
@@ -95,7 +113,8 @@ class XNB:
       else:
         # If none of the classes has a probability greater than zero,
         # we assign the class that is most representative of the train dataset
-        k = max(self._class_representation, key=self._class_representation.get)
+        k = max(self._class_representation,
+                key=self._class_representation.get)  # type: ignore
         y_pred.append((self._class_representation[k]))
 
     return np.array(y_pred)
@@ -114,7 +133,7 @@ class XNB:
       bw_dict[class_value] = {}
       d = x[y == class_value]
       for feature in x.columns:
-        bw = bw_function(d[feature], n_sample)
+        bw = bw_function(d[feature], n_sample)  # type: ignore
         bw_dict[class_value][feature] = bw
 
     return bw_dict
@@ -129,6 +148,7 @@ class XNB:
       n_sample: int,
       class_values: set
   ) -> List[KDE]:
+    """Calculate the KDE for each class and feature."""
     kde_list = []
 
     for class_value in class_values:
@@ -166,6 +186,7 @@ class XNB:
       self,
       kde_list: List[KDE]
   ) -> DataFrame:
+    """Calculate the divergence (distance) between each classes."""
     kde_dict = defaultdict(list[KDE])
 
     for kde in kde_list:
@@ -192,11 +213,11 @@ class XNB:
         by=['hellinger', 'feature', 'p0', 'p1'],
         ascending=[False, True, True, True]
     )
-    ranking = ranking[ranking.hellinger > 0.5].reset_index(drop=True)
-    return ranking
+    return ranking[ranking.hellinger > 0.5].reset_index(drop=True)
 
   @staticmethod
   def _hellinger_distance(p: List[float], q: List[float]) -> float:
+    """Calculate the Hellinger distance between two distributions."""
     try:
       s = sum([sqrt(a * b) for a, b in zip(p, q)])
     except ValueError:
@@ -241,6 +262,7 @@ class XNB:
           ranking: DataFrame,
           class_values: set
   ) -> Dict[str, Set[str]]:
+    """Calculate the feature selection for each class."""
     threshold = 0.999
     stop_dict = defaultdict(dict[str, bool])
     hellinger_dict = defaultdict(set)
@@ -253,7 +275,7 @@ class XNB:
       class_1 = row.p0
       class_2 = row.p1
       hellinger = row.hellinger
-      hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
+      hellinger_dict, stop_dict = self._update_feature_selection_dict(
           hellinger_dict,
           stop_dict,
           feature,
@@ -262,7 +284,7 @@ class XNB:
           class_a=class_1,
           class_b=class_2
       )
-      hellinger_dict, stop_dict = self._calculate_feature_selection_dict(
+      hellinger_dict, stop_dict = self._update_feature_selection_dict(
           hellinger_dict,
           stop_dict,
           feature,
@@ -281,7 +303,7 @@ class XNB:
     return self._feature_selection_dict
 
   @staticmethod
-  def _calculate_feature_selection_dict(
+  def _update_feature_selection_dict(
           hellinger_dict: Dict[str, Set[_ClassFeatureDistance]],
           stop_dict: Dict[str, Dict[str, bool]],
           feature: str,
@@ -293,6 +315,7 @@ class XNB:
       Dict[str, Set[_ClassFeatureDistance]],
       Dict[str, Dict[str, bool]]
   ]:
+    """Auxiliary method to calculate the feature selection."""
     if not stop_dict[class_a][class_b]:
       not_in_dict = class_a not in {
           x.class_value for x in hellinger_dict[class_b]
@@ -320,6 +343,7 @@ class XNB:
       target_col: Series,
       class_values: Set
   ) -> Dict:
+    """Calculate the percentage representation for each class."""
     self._class_representation = {}
     for class_value in class_values:
       target_count = target_col.value_counts().get(class_value, 0)
@@ -335,6 +359,7 @@ class XNB:
       kernel: Kernel,
       algorithm: Algorithm
   ) -> Dict:
+    """Calculate the KDE for each class."""
     self._kernel_density_dict = {}
     for class_value, features in self._feature_selection_dict.items():
       data_class = x[y == class_value]
@@ -354,6 +379,7 @@ class XNB:
 
 class NotFittedError(ValueError, AttributeError):
   """Exception class to raise if estimator is used before fitting.
+
   This class inherits from both ValueError and AttributeError to help with
   exception handling and backward compatibility.
   """

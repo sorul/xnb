@@ -1,14 +1,12 @@
 from sklearn.naive_bayes import GaussianNB
 from pathlib import Path
 import sklearn.model_selection as model_selection
-from typing import List, Dict, Callable, Set, Tuple
+from typing import Tuple
 from collections import defaultdict
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import accuracy_score
 import pandas as pd
 from itertools import product
-from sklearn.neighbors import KernelDensity
-from sklearn.metrics import accuracy_score
-import itertools
 import pytest
 
 from xnb.explicable_naive_bayes import XNB, KDE, NotFittedError
@@ -223,9 +221,9 @@ def test_calculate_feature_selection(benchmark):
   assert sorted(list(d.keys())) == sorted(list(set(y)))
 
 
-def test_calculate_feature_selection_dict(benchmark):
+def test_update_feature_selection_dict(benchmark):
   """
-  > poetry run pytest -k test_calculate_feature_selection_dict -v
+  > poetry run pytest -k test_update_feature_selection_dict -v
   """
   _, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -236,7 +234,7 @@ def test_calculate_feature_selection_dict(benchmark):
       stop_dict[cv_1][cv_2] = False
 
   # hellinger_dict, stop_dict = benchmark(
-  #     xnb._calculate_feature_selection_dict,
+  #     xnb._update_feature_selection_dict,
   #     hellinger_dict,
   #     stop_dict,
   #     feature='petal_length',
@@ -245,7 +243,7 @@ def test_calculate_feature_selection_dict(benchmark):
   #     class_a='virginica',
   #     class_b='versicolor'
   # )
-  hellinger_dict, stop_dict = xnb._calculate_feature_selection_dict(
+  hellinger_dict, stop_dict = xnb._update_feature_selection_dict(
       hellinger_dict,
       stop_dict,
       feature='petal_length',
@@ -260,7 +258,7 @@ def test_calculate_feature_selection_dict(benchmark):
 
 def test_compare_to_jesus():
   """
-  > poetry run pytest -k test_calculate_feature_selection_dict -v
+  > poetry run pytest -k test_update_feature_selection_dict -v
   """
   x, y = load_dataset(Path('data/Breast_GSE45827.csv'),
                       class_column='type', n_cols=20)

@@ -1,12 +1,12 @@
-'''
+"""
 Functions ported from the R package sm.
 
 Implements different bandwidth selection methods, including:
 - Scott's rule of thumb
 - Silverman's rule of thumb
 - Sheather-Jones estimator
-'''
-
+- GridSearchCV best estimator
+"""
 import numpy as np
 from scipy.stats import norm
 import scipy.interpolate as interpolate
@@ -23,16 +23,12 @@ __all__ = [
 
 
 def _wmean(x, w):
-  '''
-  Weighted mean
-  '''
+  """Weighted mean."""
   return sum(x * w) / float(sum(w))
 
 
 def _wvar(x, w):
-  '''
-  Weighted variance
-  '''
+  """Weighted variance."""
   return sum(w * (x - _wmean(x, w)) ** 2) / float(sum(w) - 1)
 
 
@@ -49,12 +45,7 @@ def bowman(x):
 
 
 def _select_sigma(x):
-  """
-  Returns the smaller of std(X, ddof=1) or normalized IQR(X) over axis 0.
-  References
-  ----------
-  Silverman (1986) p.47
-  """
+  """Return the smaller of std(X, ddof=1) or normalized IQR(X) over axis 0."""
   # normalize = norm.ppf(.75) - norm.ppf(.25)
   normalize = 1.349
   IQR = (_scoreatpercentile(x, 75) - _scoreatpercentile(x, 25)) / normalize
@@ -67,8 +58,17 @@ def _select_sigma(x):
     return 0.0000001
 
 
-def _empiricalcdf(data, method='Hazen'):
+def _scoreatpercentile(data, percentile):
+  """Return the score at the given percentile of the data."""
+  per = np.array(percentile)
+  cdf = _empiricalcdf(data)
+  interpolator = interpolate.interp1d(np.sort(cdf), np.sort(data))
+  return interpolator(per / 100.)
+
+
+def _empiricalcdf(data: np.ndarray, method: str = 'Hazen') -> np.ndarray:
   """Return the empirical cdf.
+
   Methods available:
       Hazen:       (i-0.5)/N
       Weibull:     i/(N+1)
@@ -77,24 +77,29 @@ def _empiricalcdf(data, method='Hazen'):
       Gringorten:  (i-.44)/(N+.12)
       California:  (i-1)/N
   Where i goes from 1 to N.
-  """
 
+  ## Args:
+      data: 1-D array
+      method: string, default 'Hazen'
+  ## Returns:
+      cdf: 1-D array
+  """
   i = np.argsort(np.argsort(data)) + 1.
   N = len(data)
   method = method.lower()
   # TODO: merece la pena tener todas estas opciones?
   if method == 'hazen':
-    cdf = (i-0.5)/N
+    cdf = (i - 0.5) / N
   elif method == 'weibull':
-    cdf = i/(N+1.)
+    cdf = i / (N + 1.)
   elif method == 'california':
-    cdf = (i-1.)/N
+    cdf = (i - 1.) / N
   elif method == 'chegodayev':
-    cdf = (i-.3)/(N+.4)
+    cdf = (i - .3) / (N + .4)
   elif method == 'cunnane':
-    cdf = (i-.4)/(N+.2)
+    cdf = (i - .4) / (N + .2)
   elif method == 'gringorten':
-    cdf = (i-.44)/(N+.12)
+    cdf = (i - .44) / (N + .12)
   else:
     raise ValueError('Unknown method. Choose among Weibull, Hazen,'
                      'Chegodayev, Cunnane, Gringorten and California.')
@@ -102,42 +107,36 @@ def _empiricalcdf(data, method='Hazen'):
   return cdf
 
 
-def _scoreatpercentile(data, percentile):
-  """Return the score at the given percentile of the data.
-  Example:
-      >>> data = randn(100)
-          >>> _scoreatpercentile(data, 50)
-      will return the median of sample `data`.
-  """
-  per = np.array(percentile)
-  cdf = _empiricalcdf(data)
-  interpolator = interpolate.interp1d(np.sort(cdf), np.sort(data))
-  return interpolator(per/100.)
-
-
-def best_estimator(data: Series, x_sample) -> float:
-  range = abs(max(data) - min(data))
+def best_estimator(data: Series, n_sample: int) -> float:
+  """Return the best estimator of the bandwidth using GridSearchCV."""
+  rang = abs(max(data) - min(data))
   len_unique = len(data.unique())
-  params = {'bandwidth': np.linspace(range/len_unique, range, x_sample)}
+  params = {
+      'bandwidth': np.linspace(
+          start=rang / len_unique,
+          stop=rang,
+          num=n_sample
+      )
+  }
   data = data.values[:, np.newaxis]
   grid = GridSearchCV(KernelDensity(), params, cv=3)
   grid.fit(list(data))
   return float(grid.best_estimator_.bandwidth_)
 
 
-def hsilverman(x, x_sample):
+def hsilverman(x, n_sample):
   A = _select_sigma(x)
   n = len(x)
   return .9 * A * n ** (-0.2)
 
 
-def hscott(x, x_sample):
+def hscott(x, n_sample):
   A = _select_sigma(x)
   n = len(x)
   return 1.059 * A * n ** (-0.2)
 
 
-def hnorm(x, weights=None) -> float:
+def _hnorm(x, weights=None) -> float:
   '''
   Bandwidth estimate assuming f is normal. See paragraph 2.4.2 of
   Bowman and Azzalini[1]_ for details.
@@ -171,7 +170,7 @@ def hnorm(x, weights=None) -> float:
   return 0.0
 
 
-def hsj(x, x_sample):
+def hsj(x, n_sample):
   '''
   Sheather-Jones bandwidth estimator [1]_.
 
@@ -182,7 +181,7 @@ def hsj(x, x_sample):
       Journal of the Royal Statistical Society, Series B. 1991
   '''
 
-  h0 = hnorm(x)
+  h0 = _hnorm(x)
   v0 = _sj(x, h0)
 
   if v0 > 0:

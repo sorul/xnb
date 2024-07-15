@@ -1,3 +1,4 @@
+"""Enum classes used in Explicable Naive Bayes."""
 from enum import Enum
 
 from xnb._bandwidth_functions import (
@@ -6,6 +7,8 @@ from xnb._bandwidth_functions import (
 
 
 class BandwidthFunction(Enum):
+  """Enum class to select the bandwidth function."""
+
   HSILVERMAN = hsilverman
   HSCOTT = hscott
   HSJ = hsj
@@ -13,6 +16,8 @@ class BandwidthFunction(Enum):
 
 
 class Kernel(str, Enum):
+  """Enum class to select the kernel function."""
+
   GAUSSIAN = 'gaussian'
   COSINE = 'cosine'
   EPANECHNIKOV = 'epanechnikov'
@@ -22,6 +27,8 @@ class Kernel(str, Enum):
 
 
 class Algorithm(str, Enum):
+  """Enum class to select the algorithm."""
+
   KD_TREE = 'kd_tree'
   BALL_TREE = 'ball_tree'
   AUTO = 'auto'
