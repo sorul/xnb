@@ -8,7 +8,8 @@ from math import sqrt
 import numpy as np
 
 from xnb._kde_object import KDE
-from xnb.enum import Algorithm, BandwidthFunction, Kernel
+from xnb.enum import Algorithm, BWFunctionName, Kernel
+from xnb._bandwidth_functions import get_bandwidth_function
 
 
 __all__ = [
@@ -44,7 +45,7 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      bw_function: BandwidthFunction = BandwidthFunction.HSCOTT,
+      bw_function: BWFunctionName = BWFunctionName.HSCOTT,
       kernel: Kernel = Kernel.GAUSSIAN,
       algorithm: Algorithm = Algorithm.AUTO,
       n_sample: int = 50
@@ -55,7 +56,7 @@ class XNB:
     :param x: DataFrame containing the input features
     :param y: Series containing the target variable
     :param bw_function: Bandwidth function to use, defaults to
-    BandwidthFunction.HSCOTT
+    BWFunctionName.HSCOTT
     :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
     :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
     :param n_sample: Number of samples to use, defaults to 50
@@ -123,17 +124,18 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      bw_function: BandwidthFunction,
+      bw_function_name: BWFunctionName,
       n_sample: int,
       class_values: set
   ) -> Dict[str, Dict[str, float]]:
     bw_dict = {}
+    bw_function = get_bandwidth_function(bw_function_name)
 
     for class_value in class_values:
       bw_dict[class_value] = {}
       d = x[y == class_value]
       for feature in x.columns:
-        bw = bw_function(d[feature], n_sample)  # type: ignore
+        bw = bw_function(d[feature], n_sample)
         bw_dict[class_value][feature] = bw
 
     return bw_dict

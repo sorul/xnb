@@ -1,18 +1,14 @@
 """Enum classes used in Explicable Naive Bayes."""
 from enum import Enum
 
-from xnb._bandwidth_functions import (
-    hsilverman, hscott, hsj, best_estimator
-)
 
-
-class BandwidthFunction(Enum):
+class BWFunctionName(Enum):
   """Enum class to select the bandwidth function."""
 
-  HSILVERMAN = hsilverman
-  HSCOTT = hscott
-  HSJ = hsj
-  BEST_ESTIMATOR = best_estimator
+  HSILVERMAN = 'hsilverman'
+  HSCOTT = 'hscott'
+  HSJ = 'hsj'
+  BEST_ESTIMATOR = 'best_estimator'
 
 
 class Kernel(str, Enum):

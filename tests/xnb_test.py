@@ -4,13 +4,12 @@ import sklearn.model_selection as model_selection
 from typing import Tuple
 from collections import defaultdict
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import accuracy_score
 import pandas as pd
 from itertools import product
 import pytest
 
 from xnb.explicable_naive_bayes import XNB, KDE, NotFittedError
-from xnb.enum import BandwidthFunction, Kernel, Algorithm
+from xnb.enum import BWFunctionName, Kernel, Algorithm
 
 
 def test_accuracy_benchmark_naive_bayes():
@@ -87,10 +86,10 @@ def test_calculate_bw_function(benchmark):
 
   # d = benchmark(
   #     xnb._calculate_bandwidth,
-  #     x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+  #     x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
   # )
   d = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+      x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
   )
 
   assert len(d.keys()) == len(set(y))
@@ -107,10 +106,10 @@ def test_calculate_bandwidth_best_estimator(benchmark):
 
   # d = benchmark(
   #     xnb._calculate_bandwidth,
-  #     x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+  #     x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
   # )
   d = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.BEST_ESTIMATOR, 50, set(y)
+      x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
   )
 
   assert len(d.keys()) == len(set(y))
@@ -122,10 +121,10 @@ def test_calculate_bandwidth_hscott(benchmark):
 
   # d = benchmark(
   #     xnb._calculate_bandwidth,
-  #     x, y, BandwidthFunction.HSCOTT, 50, set(y)
+  #     x, y, BWFunctionName.HSCOTT, 50, set(y)
   # )
   d = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSCOTT, 50, set(y)
+      x, y, BWFunctionName.HSCOTT, 50, set(y)
   )
 
   assert len(d.keys()) == len(set(y))
@@ -137,10 +136,10 @@ def test_calculate_bandwidth_hsilverman(benchmark):
 
   # d = benchmark(
   #     xnb._calculate_bandwidth,
-  #     x, y, BandwidthFunction.HSILVERMAN, 50, set(y)
+  #     x, y, BWFunctionName.HSILVERMAN, 50, set(y)
   # )
   d = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSILVERMAN, 50, set(y)
+      x, y, BWFunctionName.HSILVERMAN, 50, set(y)
   )
 
   assert len(d.keys()) == len(set(y))
@@ -152,10 +151,10 @@ def test_calculate_bandwidth_hjs(benchmark):
 
   # d = benchmark(
   #     xnb._calculate_bandwidth,
-  #     x, y, BandwidthFunction.HSJ, 50, set(y)
+  #     x, y, BWFunctionName.HSJ, 50, set(y)
   # )
   d = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSJ, 50, set(y)
+      x, y, BWFunctionName.HSJ, 50, set(y)
   )
 
   assert len(d.keys()) == len(set(y))
@@ -168,7 +167,7 @@ def test_calculate_kde(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
   bw = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSJ, 50, set(y)
+      x, y, BWFunctionName.HSJ, 50, set(y)
   )
 
   # kde_list = benchmark(
@@ -189,7 +188,7 @@ def test_calculate_divergence(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
   bw = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSJ, 50, set(y)
+      x, y, BWFunctionName.HSJ, 50, set(y)
   )
   kde_list = xnb._calculate_kdes(
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
@@ -208,7 +207,7 @@ def test_calculate_feature_selection(benchmark):
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
   bw = xnb._calculate_bandwidth(
-      x, y, BandwidthFunction.HSJ, 50, set(y)
+      x, y, BWFunctionName.HSJ, 50, set(y)
   )
   kde_list = xnb._calculate_kdes(
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
@@ -265,7 +264,7 @@ def test_compare_to_jesus():
   x_train = x.sample(frac=0.8, random_state=1)
   y_train = y[x_train.index]
   x_test = x.drop(x_train.index)
-  y_test = y[x_test.index]
+  _ = y[x_test.index]
 
   # JESUS EXPLICABLE NB
   from xnb_jesus.explicable_naive_bayes import XNB

@@ -9,7 +9,7 @@ from sklearn.neighbors import KernelDensity
 import mpmath as mp
 import itertools
 from math import log2, prod, ceil, log10, log, sqrt
-from xnb import _bandwidth_functions as bf
+from xnb_jesus import _bandwidth_functions as bf
 from xnb_jesus._kde_object import KDE
 import asyncio
 import time
