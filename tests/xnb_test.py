@@ -8,7 +8,7 @@ import pandas as pd
 from itertools import product
 import pytest
 
-from xnb.explicable_naive_bayes import XNB, KDE, NotFittedError
+from xnb.explicable_naive_bayes import XNB, NotFittedError
 from xnb.enum import BWFunctionName, Kernel, Algorithm
 
 
@@ -74,95 +74,33 @@ def test_calculate_target_representation():
   )
   assert len(d) == len(set(y))
   for k in d:
-    assert d[k] > 0 and d[k] < 1
+    assert d[k] > 0
+    assert d[k] < 1
 
 
-def test_calculate_bw_function(benchmark):
+def test_calculate_bw_function(is_benchmark, benchmark):
   """
   poetry run pytest -k test_calculate_bw_function -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
 
-  # d = benchmark(
-  #     xnb._calculate_bandwidth,
-  #     x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
-  # )
-  d = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
-  )
+  if is_benchmark:
+    d = benchmark(
+        xnb._calculate_bandwidth,
+        x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
+    )
+  else:
+    d = xnb._calculate_bandwidth(
+        x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
+    )
 
   assert len(d.keys()) == len(set(y))
 
 
-"""
-> poetry run pytest -k bandwidth -v
-"""
-
-
-def test_calculate_bandwidth_best_estimator(benchmark):
-  x, y = load_dataset(Path('data/iris.csv'))
-  xnb = XNB()
-
-  # d = benchmark(
-  #     xnb._calculate_bandwidth,
-  #     x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
-  # )
-  d = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
-  )
-
-  assert len(d.keys()) == len(set(y))
-
-
-def test_calculate_bandwidth_hscott(benchmark):
-  x, y = load_dataset(Path('data/iris.csv'))
-  xnb = XNB()
-
-  # d = benchmark(
-  #     xnb._calculate_bandwidth,
-  #     x, y, BWFunctionName.HSCOTT, 50, set(y)
-  # )
-  d = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSCOTT, 50, set(y)
-  )
-
-  assert len(d.keys()) == len(set(y))
-
-
-def test_calculate_bandwidth_hsilverman(benchmark):
-  x, y = load_dataset(Path('data/iris.csv'))
-  xnb = XNB()
-
-  # d = benchmark(
-  #     xnb._calculate_bandwidth,
-  #     x, y, BWFunctionName.HSILVERMAN, 50, set(y)
-  # )
-  d = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSILVERMAN, 50, set(y)
-  )
-
-  assert len(d.keys()) == len(set(y))
-
-
-def test_calculate_bandwidth_hjs(benchmark):
-  x, y = load_dataset(Path('data/iris.csv'))
-  xnb = XNB()
-
-  # d = benchmark(
-  #     xnb._calculate_bandwidth,
-  #     x, y, BWFunctionName.HSJ, 50, set(y)
-  # )
-  d = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSJ, 50, set(y)
-  )
-
-  assert len(d.keys()) == len(set(y))
-
-
-def test_calculate_kde(benchmark):
+def test_calculate_kde(is_benchmark, benchmark):
   """
-  > poetry run pytest -k kde -v
+  poetry run pytest -k kde -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -170,20 +108,22 @@ def test_calculate_kde(benchmark):
       x, y, BWFunctionName.HSJ, 50, set(y)
   )
 
-  # kde_list = benchmark(
-  #     xnb._calculate_kdes,
-  #     x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
-  # )
-  kde_list = xnb._calculate_kdes(
-      x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
-  )
+  if is_benchmark:
+    kde_list = benchmark(
+        xnb._calculate_kdes,
+        x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
+    )
+  else:
+    kde_list = xnb._calculate_kdes(
+        x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
+    )
 
   assert len(kde_list) > 0
 
 
-def test_calculate_divergence(benchmark):
+def test_calculate_divergence(is_benchmark, benchmark):
   """
-  > poetry run pytest -k test_calculate_divergence -v
+  poetry run pytest -k test_calculate_divergence -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -194,15 +134,17 @@ def test_calculate_divergence(benchmark):
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
   )
 
-  # ranking = benchmark(xnb._calculate_divergence, kde_list)
-  ranking = xnb._calculate_divergence(kde_list)
+  if is_benchmark:
+    ranking = benchmark(xnb._calculate_divergence, kde_list)
+  else:
+    ranking = xnb._calculate_divergence(kde_list)
 
   assert len(ranking) > 0
 
 
-def test_calculate_feature_selection(benchmark):
+def test_calculate_feature_selection(is_benchmark, benchmark):
   """
-  > poetry run pytest -k test_calculate_feature_selection -v
+  poetry run pytest -k test_calculate_feature_selection -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -214,15 +156,17 @@ def test_calculate_feature_selection(benchmark):
   )
   ranking = xnb._calculate_divergence(kde_list)
 
-  # d = benchmark(xnb._calculate_feature_selection, ranking, set(y))
-  d = xnb._calculate_feature_selection(ranking, set(y))
+  if is_benchmark:
+    d = benchmark(xnb._calculate_feature_selection, ranking, set(y))
+  else:
+    d = xnb._calculate_feature_selection(ranking, set(y))
 
-  assert sorted(list(d.keys())) == sorted(list(set(y)))
+  assert sorted(d.keys()) == sorted(set(y))
 
 
-def test_update_feature_selection_dict(benchmark):
+def test_update_feature_selection_dict(is_benchmark, benchmark):
   """
-  > poetry run pytest -k test_update_feature_selection_dict -v
+  poetry run pytest -k test_update_feature_selection_dict -v
   """
   _, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -232,34 +176,37 @@ def test_update_feature_selection_dict(benchmark):
     if cv_1 != cv_2:
       stop_dict[cv_1][cv_2] = False
 
-  # hellinger_dict, stop_dict = benchmark(
-  #     xnb._update_feature_selection_dict,
-  #     hellinger_dict,
-  #     stop_dict,
-  #     feature='petal_length',
-  #     hellinger=0.999,
-  #     threshold=0.05,
-  #     class_a='virginica',
-  #     class_b='versicolor'
-  # )
-  hellinger_dict, stop_dict = xnb._update_feature_selection_dict(
-      hellinger_dict,
-      stop_dict,
-      feature='petal_length',
-      hellinger=0.999,
-      threshold=0.05,
-      class_a='virginica',
-      class_b='versicolor'
-  )
+  if is_benchmark:
+    hellinger_dict, stop_dict = benchmark(
+        xnb._update_feature_selection_dict,
+        hellinger_dict,
+        stop_dict,
+        feature='petal_length',
+        hellinger=0.999,
+        threshold=0.05,
+        class_a='virginica',
+        class_b='versicolor'
+    )
+  else:
+    hellinger_dict, stop_dict = xnb._update_feature_selection_dict(
+        hellinger_dict,
+        stop_dict,
+        feature='petal_length',
+        hellinger=0.999,
+        threshold=0.05,
+        class_a='virginica',
+        class_b='versicolor'
+    )
+
   assert len(hellinger_dict) > 0
   assert len(stop_dict) > 0
 
 
 def test_compare_to_jesus():
   """
-  > poetry run pytest -k test_update_feature_selection_dict -v
+  poetry run pytest -k test_update_feature_selection_dict -v
   """
-  x, y = load_dataset(Path('data/Breast_GSE45827.csv'),
+  x, y = load_dataset(Path('data/iris.csv'),
                       class_column='type', n_cols=20)
   x_train = x.sample(frac=0.8, random_state=1)
   y_train = y[x_train.index]
@@ -284,9 +231,9 @@ def test_compare_to_jesus():
   assert dict(feature_selection_1) == dict(feature_selection_2)
 
 
-def test_predict(benchmark):
+def test_predict(is_benchmark, benchmark):
   """
-  > poetry run pytest -k test_predict -v
+  poetry run pytest -k test_predict -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   x_train = x.sample(frac=0.8, random_state=1)
@@ -296,28 +243,18 @@ def test_predict(benchmark):
 
   xnb = XNB()
   xnb.fit(x_train, y_train)
-  # y_pred = benchmark(xnb.predict, x_test)
-  y_pred = xnb.predict(x_test)
+
+  if is_benchmark:
+    y_pred = benchmark(xnb.predict, x_test)
+  else:
+    y_pred = xnb.predict(x_test)
 
   assert len(y_pred) == len(y_test)
 
 
-def load_dataset(
-        file_path: Path,
-        class_column: str = 'class',
-        n_cols=10,
-        sep=','
-) -> Tuple[pd.DataFrame, pd.Series]:
-  df = pd.read_csv(file_path, sep=sep).drop('samples', axis=1, errors='ignore')
-  y = df[class_column]
-  x = df.drop(class_column, axis=1)
-  x = x[list(x.columns)[:n_cols]]
-  return x, y
-
-
 def test_NotFittedError():
   """
-  > poetry run pytest -k test_NotFittedError -v
+  poetry run pytest -k test_NotFittedError -v
   """
   x, _ = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
@@ -329,7 +266,7 @@ def test_NotFittedError():
 
 def test_hellinger_distance():
   """
-  > poetry run pytest -k test_hellinger_distance -v
+  poetry run pytest -k test_hellinger_distance -v
   """
   # Test case 1: Equal lists
   p = [0.2, 0.3, 0.5]
@@ -355,3 +292,16 @@ def test_hellinger_distance():
   p = [-0.1, 0.6, 0.5]
   q = [0.2, 0.3, 0.5]
   assert XNB._hellinger_distance(p, q) == 1.0
+
+
+def load_dataset(
+        file_path: Path,
+        class_column: str = 'class',
+        n_cols: int = 10,
+        sep: str = ','
+) -> Tuple[pd.DataFrame, pd.Series]:
+  df = pd.read_csv(file_path, sep=sep).drop('samples', axis=1, errors='ignore')
+  y = df[class_column]
+  x = df.drop(class_column, axis=1)
+  x = x[list(x.columns)[:n_cols]]
+  return x, y
