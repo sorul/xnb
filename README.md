@@ -26,11 +26,13 @@ x, y = df.iloc[:, 0:-1], df.iloc[:,-1]
 x_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=0)
 
 ''' 2. By calling the fit() function, we prepare the object to be able to make the prediction later. '''
-xnb = XNB()
+xnb = XNB(
+  show_progress_bar = True # optional
+)
 xnb.fit(
   x_train,
   y_train,
-  bw_function = BWFunctionName.BEST_ESTIMATOR, # optional
+  bw_function = BWFunctionName.HSILVERMAN, # optional
   kernel = Kernel.GAUSSIAN, # optional
   algorithm = Algorithm.AUTO, # optional
   n_sample = 50 # optional

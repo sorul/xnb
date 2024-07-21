@@ -13,7 +13,7 @@ from xnb_jesus import _bandwidth_functions as bf
 from xnb_jesus._kde_object import KDE
 import asyncio
 import time
-from progress.bar import Bar, ChargingBar
+# from progress.bar import Bar, ChargingBar
 from sklearn import preprocessing
 # from KDEpy import FFTKDE
 # import matplotlib.pyplot as plt
@@ -83,8 +83,8 @@ class XNB():
 
   def _calculate_bandwidth(self, X: pd.DataFrame, y: pd.Series) -> None:
     inicio = time.time()
-    progressBar = Bar('PROG. BANDWIDTH:', max=len(
-        X.columns)*len(self._class_values))
+    # progressBar = Bar('PROG. BANDWIDTH:', max=len(
+    #     X.columns)*len(self._class_values))
     # Different types of function can be used
     if self.bw_function == self.BW_HSILVERMAN:
       bw_f = bf.hsilverman
@@ -105,15 +105,15 @@ class XNB():
       for v in X.columns:
         bw = bw_f(d[v], self.x_sample)
         self._bw_dict[c][v] = bw
-        progressBar.next()
+        # progressBar.next()
 
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. BANDWIDTH: {fin-inicio:.3f} sec.'.rjust(offset_print))
 
   def _calculate_kde(self, X: pd.DataFrame, y: pd.Series) -> None:
     inicio = time.time()
-    progressBar = Bar('PROG. KDE:', max=len(X.columns)*len(self._class_values))
+    # progressBar = Bar('PROG. KDE:', max=len(X.columns)*len(self._class_values))
     self._kde_list = []
     cols = X.columns
     mp.dps = 100
@@ -131,9 +131,9 @@ class XNB():
                             algorithm=self.algorithm).fit(data.values[:, np.newaxis])
         y_points = np.exp(kde.score_samples(x_points[:, np.newaxis]))
         self._kde_list.append(KDE(v, c, x_points, y_points))
-        progressBar.next()
+        # progressBar.next()
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. KDE: {fin-inicio:.3f} sec.'.rjust(offset_print))
 
   def _normalize(self, data: list) -> list:
@@ -163,7 +163,7 @@ class XNB():
 
       return sqrt(1-s)
 
-    progressBar = Bar('PROG. HELLINGER:', max=len(self._variables))
+    # progressBar = Bar('PROG. HELLINGER:', max=len(self._variables))
 
     kde_dict = {}
     for v in self._variables:
@@ -183,7 +183,7 @@ class XNB():
             q = self._normalize(kde_dict[c][kde2].y_points)
             hellinger = hellinger_distance(p, q)
             scores.append([f1, t1, t2, hellinger])
-      progressBar.next()
+      # progressBar.next()
 
     ranking = pd.DataFrame(
         scores, columns=['feature', 'p0', 'p1', 'hellinger']).drop_duplicates()
@@ -193,13 +193,13 @@ class XNB():
 
     self._ranking_divergence = ranking
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. HELLINGER: {fin-inicio:.3f} sec.'.rjust(offset_print))
 
   def _calculate_feature_selection(self):
     inicio = time.time()
-    progressBar = Bar('PROG. FEATURE SELECTION:',
-                      max=len(self._ranking_divergence))
+    # progressBar = Bar('PROG. FEATURE SELECTION:',
+                      # max = len(self._ranking_divergence))
     threshold = 0.999
     finished_class, dict_result = {}, {}
     for c in self._class_values:
@@ -220,7 +220,7 @@ class XNB():
         dict_result, finished_class = self._addDict(dict_result, class_2, class_1,
                                                     feature, hellinger, finished_class,
                                                     threshold)
-      progressBar.next()
+      # progressBar.next()
 
     with open('data/dict_result.json', 'wb') as fp:
       pickle.dump(dict_result, fp)
@@ -228,7 +228,7 @@ class XNB():
       self.feature_selection_dict[d] = set(
           map(lambda x: x.split(' || ')[1], dict_result[d].keys()))
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. FEATURE SELECTION: {fin-inicio:.3f} sec.'.rjust(offset_print))
 
   @staticmethod
@@ -262,8 +262,8 @@ class XNB():
 
   def _calculate_necessary_kde(self, X: pd.DataFrame, y: pd.Series) -> None:
     inicio = time.time()
-    progressBar = Bar('PROG. NECESSARY KDE:',
-                      max=len(self.feature_selection_dict))
+    # progressBar = Bar('PROG. NECESSARY KDE:',
+    #                   max=len(self.feature_selection_dict))
     self._kernel_density_dict = {}
     for c, variables in self.feature_selection_dict.items():
       # kde_values = []
@@ -279,10 +279,10 @@ class XNB():
                             algorithm=self.algorithm).fit(data.values[:, np.newaxis])
         self._kernel_density_dict[c][v] = kde
 
-      progressBar.next()
+      # progressBar.next()
 
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. NECESSARY KDE: {fin-inicio:.3f} sec.'.rjust(offset_print))
 
   def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
@@ -297,7 +297,7 @@ class XNB():
 
   def predict(self, X: pd.DataFrame) -> list:
     inicio = time.time()
-    progressBar = Bar('PROG. PREDICT NEW:', max=len(X))
+    # progressBar = Bar('PROG. PREDICT NEW:', max=len(X))
     # mp.dps = 1000
 
     # Iterating each test record
@@ -327,8 +327,8 @@ class XNB():
         # If none of the classes has a probability greater than zero, we assign the class that is most representative of the train dataset
         k = max(self._class_representation, key=self._class_representation.get)
         y_pred.append((self._class_representation[k]))
-      progressBar.next()
+      # progressBar.next()
     fin = time.time()
-    progressBar.finish()
+    # progressBar.finish()
     print(f'T. PREDICTION NEW: {fin-inicio:.3f} sec.'.rjust(offset_print))
     return y_pred

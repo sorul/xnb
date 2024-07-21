@@ -207,8 +207,7 @@ def test_compare_to_jesus():
   """
   poetry run pytest -k test_update_feature_selection_dict -v
   """
-  x, y = load_dataset(Path('data/iris.csv'),
-                      class_column='type', n_cols=20)
+  x, y = load_dataset(Path('data/iris.csv'), n_cols=20)
   x_train = x.sample(frac=0.8, random_state=1)
   y_train = y[x_train.index]
   x_test = x.drop(x_train.index)
