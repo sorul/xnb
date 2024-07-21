@@ -13,8 +13,11 @@ from xnb._bandwidth_functions import get_bandwidth_function
 
 
 __all__ = [
-    'XNB'
+    'XNB',
+    'NotFittedError'
 ]
+
+# TODO: incluir barras de progreso
 
 
 class _ClassFeatureDistance:
@@ -45,7 +48,7 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      bw_function: BWFunctionName = BWFunctionName.HSCOTT,
+      bw_function: BWFunctionName = BWFunctionName.BEST_ESTIMATOR,
       kernel: Kernel = Kernel.GAUSSIAN,
       algorithm: Algorithm = Algorithm.AUTO,
       n_sample: int = 50
@@ -56,7 +59,7 @@ class XNB:
     :param x: DataFrame containing the input features
     :param y: Series containing the target variable
     :param bw_function: Bandwidth function to use, defaults to
-    BWFunctionName.HSCOTT
+    BWFunctionName.BEST_ESTIMATOR
     :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
     :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
     :param n_sample: Number of samples to use, defaults to 50

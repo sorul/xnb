@@ -8,7 +8,7 @@ import pandas as pd
 from itertools import product
 import pytest
 
-from xnb.explicable_naive_bayes import XNB, NotFittedError
+from xnb import XNB, NotFittedError
 from xnb.enum import BWFunctionName, Kernel, Algorithm
 
 
@@ -202,6 +202,7 @@ def test_update_feature_selection_dict(is_benchmark, benchmark):
   assert len(stop_dict) > 0
 
 
+# TODO: eliminar este test
 def test_compare_to_jesus():
   """
   poetry run pytest -k test_update_feature_selection_dict -v

@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Tuple
 import pandas as pd
 
-from xnb.explicable_naive_bayes import XNB
+from xnb import XNB
 from xnb.enum import BWFunctionName
 
 
