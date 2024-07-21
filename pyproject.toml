@@ -9,8 +9,6 @@ python = "3.9.0"
 numpy = "1.21.2"
 pandas = "2.0.3"
 sklearn = "0.0"
-mpmath = "1.2.1"
-numba = "0.56.4"
 alive-progress = "^3.1.5"
 
 [tool.poetry.dev-dependencies]

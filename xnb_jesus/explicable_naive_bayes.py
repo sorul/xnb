@@ -6,7 +6,7 @@ from sklearn.neighbors import KernelDensity
 # import multiprocessing
 # import multiprocessing.managers
 # from multiprocessing import Pool
-import mpmath as mp
+# import mpmath as mp
 import itertools
 from math import log2, prod, ceil, log10, log, sqrt
 from xnb_jesus import _bandwidth_functions as bf
@@ -116,7 +116,7 @@ class XNB():
     # progressBar = Bar('PROG. KDE:', max=len(X.columns)*len(self._class_values))
     self._kde_list = []
     cols = X.columns
-    mp.dps = 100
+    # mp.dps = 100
 
     for c in self._class_values:
       # self._kernel_density_dict[c] = {}
@@ -199,7 +199,7 @@ class XNB():
   def _calculate_feature_selection(self):
     inicio = time.time()
     # progressBar = Bar('PROG. FEATURE SELECTION:',
-                      # max = len(self._ranking_divergence))
+    # max = len(self._ranking_divergence))
     threshold = 0.999
     finished_class, dict_result = {}, {}
     for c in self._class_values:

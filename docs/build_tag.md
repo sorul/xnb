@@ -1,6 +1,12 @@
 Source: [Tutorial]( https://dev.to/luscasleo/creating-and-publishing-a-python-lib-with-poetry-and-git-11bp#:~:text=Creating%20and%20publishing%20a%20python%20lib%20with%20poetry,...%206%20Bonus%20-%20Using%20private%20repositories%20)
 
-### The first thing is to update the [CHANGELOG](../CHANGELOG.md) file. The changes are cataloged in:
+### 1. Merge all the changes into develop branch
+
+### 2. Being in develop branch, update the [CHANGELOG](../CHANGELOG.md) file.
+
+Write down the date of today.
+
+The changes are cataloged in:
 - fix: A bug fix. Correlates with PATCH
 - feat: A new feature. Correlates with MINOR
 - docs: Documentation only changes
@@ -13,7 +19,7 @@ Source: [Tutorial]( https://dev.to/luscasleo/creating-and-publishing-a-python-li
 
 <br/>
 
-### We uploaded the version according to the change made:
+### 3. Upload the version according to the change made:
 ```python
 poetry version <option>
 ```
@@ -28,7 +34,7 @@ The \<option> should be ([Poetry Doc](https://python-poetry.org/docs/cli/#versio
 
 <br/>
 
-### The next step is to make the build package and push it to Github:
+### 4. Make the build package and push it to Github:
 ```
-make version
+make tag
 ```
