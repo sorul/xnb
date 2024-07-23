@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 from itertools import product
 import pytest
+from numpy import array
 
 from xnb import XNB, NotFittedError
 from xnb.enum import BWFunctionName, Kernel, Algorithm
@@ -269,28 +270,29 @@ def test_hellinger_distance():
   poetry run pytest -k test_hellinger_distance -v
   """
   # Test case 1: Equal lists
-  p = [0.2, 0.3, 0.5]
-  q = [0.2, 0.3, 0.5]
+  p = array([0.2, 0.3, 0.5])
+  q = array([0.2, 0.3, 0.5])
   assert XNB._hellinger_distance(p, q) == 0.0
 
   # Test case 2: Different lists
-  p = [0.1, 0.2, 0.7]
-  q = [0.3, 0.4, 0.3]
-  assert round(XNB._hellinger_distance(p, q), 2) == 0.29
+  p = array([0.1, 0.2, 0.7])
+  q = array([0.3, 0.4, 0.3])
+  r = XNB._hellinger_distance(p, q)
+  assert round(r, 2) == 0.29
 
   # Test case 3: One empty list
-  p = []
-  q = [0.5, 0.5]
+  p = array([])
+  q = array([0.5, 0.5])
   assert XNB._hellinger_distance(p, q) == 1.0
 
   # Test case 4: Both lists empty
-  p = []
-  q = []
+  p = array([])
+  q = array([])
   assert XNB._hellinger_distance(p, q) == 1.0
 
   # Test case 5: Negative values
-  p = [-0.1, 0.6, 0.5]
-  q = [0.2, 0.3, 0.5]
+  p = array([-0.1, 0.6, 0.5])
+  q = array([0.2, 0.3, 0.5])
   assert XNB._hellinger_distance(p, q) == 1.0
 
 
