@@ -184,8 +184,6 @@ def _sj(x, h):
 
 def _select_sigma(x):
   """Return the smaller of std(X, ddof=1) or normalized IQR(X) over axis 0."""
-  # normalize = norm.ppf(.75) - norm.ppf(.25)
-  # TODO: que normalizacion dejamos?
   normalize = 1.349
   IQR = (_scoreatpercentile(x, 75) - _scoreatpercentile(x, 25)) / normalize
   std_dev = np.std(x, axis=0, ddof=1)
@@ -258,11 +256,3 @@ def _wvar(x, w):
 
 def _dnorm(x):
   return norm.pdf(x, 0.0, 1.0)
-
-
-def bowman(data: Series) -> float:
-  pass
-  # TODO: implement?
-  # hx = median(abs(x - median(x))) / 0.6745 * (4 / 3 / r.n) ^ 0.2
-  # hy = median(abs(y - median(y))) / 0.6745 * (4 / 3 / r.n) ^ 0.2
-  # h = sqrt(hy * hx)

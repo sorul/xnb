@@ -229,8 +229,8 @@ class XNB:
             t2 = kde_dict[feature][index_2].target_value
             f2 = kde_dict[feature][index_2].feature
             if t1 != t2 and f1 == f2:
-              p = self._normalize2(kde_dict[feature][index_1].y_points)
-              q = self._normalize2(kde_dict[feature][index_2].y_points)
+              p = self._normalize(kde_dict[feature][index_1].y_points)
+              q = self._normalize(kde_dict[feature][index_2].y_points)
               hellinger = self._hellinger_distance(p, q)
               scores.append([f1, t1, t2, hellinger])
         next_bar()
@@ -245,7 +245,7 @@ class XNB:
     return ranking[ranking.hellinger > 0.5].reset_index(drop=True)
 
   @staticmethod
-  def _hellinger_distance(p: List[float], q: List[float]) -> float:
+  def _hellinger_distance(p: np.ndarray, q: np.ndarray) -> float:
     """Calculate the Hellinger distance between two distributions."""
     try:
       s = sum([sqrt(a * b) for a, b in zip(p, q)])
@@ -255,35 +255,14 @@ class XNB:
     return sqrt(1 - s)
 
   @staticmethod
-  def _normalize(data: np.ndarray) -> List:
-    s = sum(data)
-    norm_data = [x / s if s != 0 else 0 for x in data]
-    diff = 1 - sum(norm_data)
-    if diff < 0:
-      i = len(norm_data) - 1
-      while diff < 0 and i >= 0:
-        if norm_data[i] + diff >= 0:
-          norm_data[i] += diff
-          diff = 0
-        else:
-          diff += norm_data[i]
-          norm_data[i] = 0
-        i -= 1
-    else:
-      norm_data[-1] += diff
-    return norm_data
-
-  @staticmethod
-  def _normalize2(data: List) -> List:
-    s = sum(data)
+  def _normalize(data: np.ndarray) -> np.ndarray:
+    s = np.sum(data)
     if s > 0:
-      data = [data[i] / s for i in range(len(data))]
-    else:
-      data = [1.0 / len(data) for i in range(len(data))]
-    s = sum(data)
+      data = data / s
+    s = np.sum(data)
     while s > 1.0:
-      data = [data[i] / s for i in range(len(data))]
-      s = sum(data)
+      data = data / s
+      s = np.sum(data)
     return data
 
   def _calculate_feature_selection(
