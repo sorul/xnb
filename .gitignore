@@ -162,6 +162,7 @@ cython_debug/
 data/*
 !data/iris.csv
 .benchmarks/
+xnb_jesus/
 
 # Files
 main.py
