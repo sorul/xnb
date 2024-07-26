@@ -104,8 +104,8 @@ def independence_test_3(X, y):
         dependent[i] = 1
         dependent[j] = 1
 
-  Parallel(n_jobs=-1)(delayed(process)(i, j)
-                      for i in range(n_columns) for j in range(i+1, n_columns))
+  Parallel(n_jobs=3)(delayed(process)(i, j)
+                     for i in range(n_columns) for j in range(i+1, n_columns))
   return sum(dependent)
 
 
