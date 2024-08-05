@@ -66,7 +66,7 @@ def load_dataset(
         sep: str = ','
 ) -> Tuple[pd.DataFrame, pd.Series]:
   df = pd.read_csv(file_path, sep=sep).drop('samples', axis=1, errors='ignore')
-  y = df.class_column
+  y = df[class_column]
   x = df.drop(class_column, axis=1)
   x = x[list(x.columns)[:n_cols]]
   return x, y

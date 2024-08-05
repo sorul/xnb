@@ -1,5 +1,5 @@
 flake8:
-	@flake8 --config config/tox.ini
+	@poetry run flake8 --config config/tox.ini
 
 test:
 	@poetry run pytest --cov=xnb tests

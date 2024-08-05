@@ -117,9 +117,9 @@ def best_estimator(data: Series, n_sample: int) -> float:
           num=n_sample
       )
   }
-  data = data.values[:, np.newaxis]
+  data_ = data.values[:, np.newaxis]
   grid = GridSearchCV(KernelDensity(), params, cv=3)
-  grid.fit(list(data))
+  grid.fit(list(data_))
   return float(grid.best_estimator_.bandwidth_)
 
 

@@ -1,3 +1,8 @@
+# 0.2.0 (2024-08-05)
+### Refactor
+- All methods have been refactored. Ready to be uploaded along with the paper.
+
+
 # 0.1.3 (2023-02-26)
 ### Fix
 - Error in "_calculate_feature_selection" function fixed. The solution is to copy the map object.
