@@ -19,9 +19,9 @@ tag:
 	@git commit -am "v$$(poetry version -s)"
 	@git push
 	@git checkout master
-	@git merge --no-edit --log develop
+	@git merge --no-edit --log developer
 	@git tag v$$(poetry version -s)
 	@git push
 	@git push --tags
-	@git checkout develop
+	@git checkout developer
 	@poetry version

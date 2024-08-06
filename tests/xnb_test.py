@@ -203,35 +203,6 @@ def test_update_feature_selection_dict(is_benchmark, benchmark):
   assert len(stop_dict) > 0
 
 
-# TODO: eliminar este test
-def test_compare_to_jesus():
-  """
-  poetry run pytest -k test_update_feature_selection_dict -v
-  """
-  x, y = load_dataset(Path('data/iris.csv'), n_cols=20)
-  x_train = x.sample(frac=0.8, random_state=1)
-  y_train = y[x_train.index]
-  x_test = x.drop(x_train.index)
-  _ = y[x_test.index]
-
-  # JESUS EXPLICABLE NB
-  from xnb_jesus.explicable_naive_bayes import XNB
-  xnb = XNB()
-  xnb.fit(x_train, y_train)
-  feature_selection_2 = xnb.feature_selection_dict
-  y_pred_2 = xnb.predict(x_test)
-
-  # EXPLICABLE NB
-  from xnb.explicable_naive_bayes import XNB
-  xnb = XNB()
-  xnb.fit(x_train, y_train)
-  feature_selection_1 = xnb.feature_selection_dict
-  y_pred_1 = xnb.predict(x_test)
-
-  assert list(y_pred_1) == list(y_pred_2)
-  assert dict(feature_selection_1) == dict(feature_selection_2)
-
-
 def test_predict(is_benchmark, benchmark):
   """
   poetry run pytest -k test_predict -v
