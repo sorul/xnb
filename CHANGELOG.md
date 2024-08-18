@@ -1,3 +1,7 @@
+# 0.2.1 (2024-08-18)
+### Docs
+- README updated.
+
 # 0.2.0 (2024-08-05)
 ### Refactor
 - All methods have been refactored. Ready to be uploaded along with the paper.
