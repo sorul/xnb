@@ -1,3 +1,8 @@
+# 0.2.2 (2024-08-19)
+### Docs
+- New installation section in README.md
+- Example modified in README.md
+
 # 0.2.1 (2024-08-18)
 ### Docs
 - README updated.
