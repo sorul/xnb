@@ -1,5 +1,8 @@
 # Explainable Class–Specific Naive–Bayes Classifier
 
+![Test](https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
+![codecov.io](https://codecov.io/github/sorul/xnb/coverage.svg?branch=master)
+
 Explicable Naive Bayes (XNB) classifier includes two important
 features: 
 

@@ -2,6 +2,7 @@
 ### Docs
 - New installation section in README.md
 - Example modified in README.md
+- New test and coverage badges in README.md
 
 # 0.2.1 (2024-08-18)
 ### Docs
