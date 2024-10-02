@@ -9,12 +9,12 @@
     <td>
       <a href="https://github.com/sorul/xnb">
       <picture>
-        <img alt="Github" src="docs/images/github.png" width="30" height="30">
+        <img alt="Github" src="https://cdn1.iconfinder.com/data/icons/rounded-social-media/512/github-512.png" width="30" height="30">
       </picture>
       </a>
       <a href="https://pypi.org/project/xnb/">
       <picture>
-        <img alt="PYPI" src="docs/images/pypi.png" width="30" height="30">
+        <img alt="PYPI" src="https://seeklogo.com/images/P/python-package-index-logo-F2EC9F1F8C-seeklogo.com.png" width="30" height="30">
       </picture>
       </a>
     </td>
