@@ -3,7 +3,7 @@ from typing import Tuple
 import pandas as pd
 
 from xnb import XNB
-from xnb.enum import BWFunctionName
+from xnb.enums import BWFunctionName
 
 
 """

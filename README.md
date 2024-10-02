@@ -1,9 +1,35 @@
 # Explainable Class–Specific Naive–Bayes Classifier
 
-![Test](https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
-![codecov.io](https://codecov.io/github/sorul/xnb/coverage.svg?branch=master)
+<table>
+  <tr>
+    <th>Repositories</th>
+    <th>Badges</th>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/sorul/xnb">
+      <picture>
+        <img alt="Github" src="docs/images/github.png" width="30" height="30">
+      </picture>
+      </a>
+      <a href="https://pypi.org/project/xnb/">
+      <picture>
+        <img alt="PYPI" src="docs/images/pypi.png" width="30" height="30">
+      </picture>
+      </a>
+    </td>
+    <td>
+        <img alt="Testing & Coverage." src="https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master">
+        <img alt="Codecov.io" src="https://codecov.io/github/sorul/xnb/coverage.svg?branch=master">
+      </a>
+    </td>
+  </tr>
+</table>
 
-Explicable Naive Bayes (XNB) classifier includes two important
+
+
+## Description
+Explainable Naive Bayes (XNB) classifier includes two important
 features: 
 
 1) The probability is calculated by means of Kernel Density Estimation (KDE).
@@ -28,7 +54,7 @@ pip install xnb
 
 ```python
 from xnb import XNB
-from xnb.enum import BWFunctionName, Kernel, Algorithm
+from xnb.enums import BWFunctionName, Kernel, Algorithm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.datasets import load_iris

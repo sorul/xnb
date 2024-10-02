@@ -1,9 +1,31 @@
 [tool.poetry]
 name = "xnb"
-version = "0.2.2"
-description = "KDE Classifier with feature selection and Naive Bayes"
-authors = ["Cayetano Romero", "Jesús Aguilar"]
+version = "0.2.3"
+description = "Explainable Naive Bayes (XNB) classifier. Using KDE for feature selection and Naive Bayes for prediction."
 readme = "README.md"
+authors = [
+  "Cayetano Romero Vargas <cromerovargas2d@gmail.com>",
+  "Jesús Aguilar <aguilar@upo.es>"
+]
+license = "MIT"
+keywords = [
+  "KDE", "naive bayes", "classification", "feature selection",
+  "machine learning", "explicability", "kernel density", "class-specific"
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+"Repository" = "https://github.com/sorul/xnb"
+"Changelog" = "https://github.com/sorul/xnb/blob/master/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9.0, <4.0.0"

@@ -1,3 +1,8 @@
+# 0.2.3 (2024-10-02)
+### Docs
+- README updated with repository links.
+- Metadata added to pyproject.toml
+
 # 0.2.2 (2024-08-19)
 ### Docs
 - New installation section in README.md
