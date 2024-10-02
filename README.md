@@ -1,9 +1,24 @@
 # Explainable Class–Specific Naive–Bayes Classifier
 
+Repositories:
+<a href="https://github.com/sorul/xnb">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/github-mark-white.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/github-mark.png">
+  <img alt="Github." src="docs/images/github-mark.png" width="30" height="30">
+</picture>
+</a>
+
+Badges:
+
 ![Test](https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
 ![codecov.io](https://codecov.io/github/sorul/xnb/coverage.svg?branch=master)
 
-Explicable Naive Bayes (XNB) classifier includes two important
+
+
+
+## Description
+Explainable Naive Bayes (XNB) classifier includes two important
 features: 
 
 1) The probability is calculated by means of Kernel Density Estimation (KDE).
