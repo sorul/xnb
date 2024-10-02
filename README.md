@@ -1,19 +1,32 @@
 # Explainable Class–Specific Naive–Bayes Classifier
 
-Repositories:
-<a href="https://github.com/sorul/xnb">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/github-mark-white.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/github-mark.png">
-  <img alt="Github." src="docs/images/github-mark.png" width="30" height="30">
-</picture>
-</a>
-
-Badges:
-
-![Test](https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
-![codecov.io](https://codecov.io/github/sorul/xnb/coverage.svg?branch=master)
-
+<table>
+  <tr>
+    <th>Repositories</th>
+    <th>Badges</th>
+  </tr>
+  <tr>
+    <td>
+      <a href="https://github.com/sorul/xnb">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/github-mark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/images/github-mark-white.png">
+        <img alt="Github." src="docs/images/github-mark-white.png" width="30" height="30">
+      </picture>
+      </a>
+      <a href="https://pypi.org/project/xnb/">
+      <picture>
+        <img alt="PYPI." src="docs/images/pypi.png" width="30" height="30">
+      </picture>
+      </a>
+    </td>
+    <td>
+        <img alt="Testing & Coverage." src="https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master">
+        <img alt="Codecov.io" src="https://codecov.io/github/sorul/xnb/coverage.svg?branch=master">
+      </a>
+    </td>
+  </tr>
+</table>
 
 
 
