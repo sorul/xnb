@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "xnb"
-version = "0.2.2"
+version = "0.2.3"
 description = "Explainable Naive Bayes (XNB) classifier. Using KDE for feature selection and Naive Bayes for prediction."
 readme = "README.md"
 authors = [
-  {name = "Cayetano Romero Vargas", email = "cromerovargas2d@gmail.com"},
-  {name = "Jesús Aguilar", email = "aguilar@upo.es"}
+  "Cayetano Romero Vargas <cromerovargas2d@gmail.com>",
+  "Jesús Aguilar <aguilar@upo.es>"
 ]
-license = { text = "MIT" }
+license = "MIT"
 keywords = [
   "KDE", "naive bayes", "classification", "feature selection",
   "machine learning", "explicability", "kernel density", "class-specific"

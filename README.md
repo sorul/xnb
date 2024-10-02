@@ -9,14 +9,12 @@
     <td>
       <a href="https://github.com/sorul/xnb">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/images/github-mark.png">
-        <source media="(prefers-color-scheme: light)" srcset="docs/images/github-mark-white.png">
-        <img alt="Github." src="docs/images/github-mark-white.png" width="30" height="30">
+        <img alt="Github" src="docs/images/github.png" width="30" height="30">
       </picture>
       </a>
       <a href="https://pypi.org/project/xnb/">
       <picture>
-        <img alt="PYPI." src="docs/images/pypi.png" width="30" height="30">
+        <img alt="PYPI" src="docs/images/pypi.png" width="30" height="30">
       </picture>
       </a>
     </td>
@@ -56,7 +54,7 @@ pip install xnb
 
 ```python
 from xnb import XNB
-from xnb.enum import BWFunctionName, Kernel, Algorithm
+from xnb.enums import BWFunctionName, Kernel, Algorithm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.datasets import load_iris

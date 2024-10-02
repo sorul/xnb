@@ -10,7 +10,7 @@ import pytest
 from numpy import array
 
 from xnb import XNB, NotFittedError
-from xnb.enum import BWFunctionName, Kernel, Algorithm
+from xnb.enums import BWFunctionName, Kernel, Algorithm
 
 
 def test_accuracy_benchmark_naive_bayes():

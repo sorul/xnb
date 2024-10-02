@@ -15,7 +15,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 from typing import Callable, Union
 
-from xnb.enum import BWFunctionName as BFN
+from xnb.enums import BWFunctionName as BFN
 
 __all__ = [
     'get_bandwidth_function',

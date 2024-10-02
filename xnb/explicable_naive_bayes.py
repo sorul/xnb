@@ -8,7 +8,7 @@ from math import sqrt
 import numpy as np
 
 from xnb._kde_object import KDE
-from xnb.enum import Algorithm, BWFunctionName, Kernel
+from xnb.enums import Algorithm, BWFunctionName, Kernel
 from xnb._bandwidth_functions import get_bandwidth_function
 from xnb._progress_bar import progress_bar
 
