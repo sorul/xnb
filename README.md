@@ -1,25 +1,7 @@
 # Explainable Class–Specific Naive–Bayes Classifier
 
-<table>
-  <tr>
-    <th>Repositories</th>
-    <th>Badges</th>
-  </tr>
-  <tr>
-    <td>
-      <button href="https://github.com/sorul/xnb">Github
-      </button>
-      <button href="https://pypi.org/project/xnb/"> PyPI
-      </button>
-    </td>
-    <td>
-        <img alt="Testing & Coverage." src="https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master">
-        <img alt="Codecov.io" src="https://codecov.io/github/sorul/xnb/coverage.svg?branch=master">
-      </a>
-    </td>
-  </tr>
-</table>
-
+![Test](https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master)
+![codecov.io](https://codecov.io/github/sorul/xnb/coverage.svg?branch=master)
 
 
 ## Description
@@ -104,3 +86,7 @@ versicolor: {'petal length (cm)', 'petal width (cm)'}
 -------------
 Accuracy: 1.0
 ```
+
+# Links
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-negro?style=for-the-badge&logo=github)](https://github.com/sorul/xnb)
+[![PyPI](https://img.shields.io/badge/PyPI-Package-3776AB?style=for-the-badge&logo=pypi)](https://pypi.org/project/xnb/)
