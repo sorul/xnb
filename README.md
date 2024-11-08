@@ -46,7 +46,7 @@ x = df.drop('target', axis=1)
 y = df['target'].replace(
   to_replace= [0, 1, 2], value = ['setosa', 'versicolor', 'virginica']
 )
-x_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=0)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=0)
 
 ''' 2. By calling the fit() function,
 we prepare the object to be able to make the prediction later. '''
@@ -67,7 +67,7 @@ we can now access the feature selection dictionary it has calculated. '''
 feature_selection = xnb.feature_selection_dict
 
 ''' 4. We predict the values of "y_test" using implicitly the calculated dictionary. '''
-y_pred = xnb.predict(X_test)
+y_pred = xnb.predict(x_test)
 
 # Output
 print('Relevant features for each class:\n')
