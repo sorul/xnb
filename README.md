@@ -7,16 +7,10 @@
   </tr>
   <tr>
     <td>
-      <a href="https://github.com/sorul/xnb">
-      <picture>
-        <img alt="Github" src="https://cdn1.iconfinder.com/data/icons/rounded-social-media/512/github-512.png" width="30" height="30">
-      </picture>
-      </a>
-      <a href="https://pypi.org/project/xnb/">
-      <picture>
-        <img alt="PYPI" src="https://seeklogo.com/images/P/python-package-index-logo-F2EC9F1F8C-seeklogo.com.png" width="30" height="30">
-      </picture>
-      </a>
+      <button href="https://github.com/sorul/xnb">Github
+      </button>
+      <button href="https://pypi.org/project/xnb/"> PyPI
+      </button>
     </td>
     <td>
         <img alt="Testing & Coverage." src="https://github.com/sorul/xnb/actions/workflows/testing_coverage.yml/badge.svg?branch=master">
