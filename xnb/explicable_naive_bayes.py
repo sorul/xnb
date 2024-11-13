@@ -26,7 +26,7 @@ class _ClassFeatureDistance:
     self.distance = distance
 
   def __hash__(self):
-    return hash(self.class_value + self.feature)
+    return hash(str(self.class_value) + str(self.feature))
 
 
 class XNB:

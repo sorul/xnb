@@ -1,3 +1,7 @@
+# 0.2.4
+### Fix
+- Bug in hash method of _ClassFeatureDistance class.
+
 # 0.2.3 (2024-10-02)
 ### Docs
 - README updated with repository links.

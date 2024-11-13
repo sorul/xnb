@@ -17,5 +17,5 @@ class KDE():
     self.feature = feature
     self.target_value = target_value
     self.kernel_density = kernel_density
-    self.X_points = x_points
+    self.x_points = x_points
     self.y_points = y_points
