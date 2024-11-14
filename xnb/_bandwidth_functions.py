@@ -114,7 +114,7 @@ def best_estimator(data: Series, n_sample: int) -> float:
     warnings.warn(
         'Bandwidth - Best Estimator - There is no deviation '
         'in one of the features provided for a specific class.'
-        ' The bandwidth result will be zero for this feature and class.'
+        ' The bandwidth result will be 0.0000001 for this feature and class.'
         f'\nData:\n {data}', UserWarning, stacklevel=2
     )
     return 0.0000001
