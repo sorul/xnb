@@ -14,6 +14,7 @@ from pandas import Series
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 from typing import Callable, Union
+import warnings
 
 from xnb.enums import BWFunctionName as BFN
 
@@ -109,6 +110,14 @@ def hsj(data: Series) -> float:
 def best_estimator(data: Series, n_sample: int) -> float:
   """Return the best estimator of the bandwidth using GridSearchCV."""
   rang = abs(max(data) - min(data))
+  if rang == 0:
+    warnings.warn(
+        'Bandwidth - Best Estimator - There is no deviation '
+        'in one of the features provided for a specific class.'
+        ' The bandwidth result will be zero for this feature and class.'
+        f'\nData:\n {data}', UserWarning, stacklevel=2
+    )
+    return 0
   len_unique = len(data.unique())
   params = {
       'bandwidth': np.linspace(
