@@ -1,6 +1,6 @@
 """Explicable Naive Bayes."""
 from sklearn.neighbors import KernelDensity
-from typing import Tuple, List, Dict, Set
+from typing import Tuple, List, Dict, Set, Union
 from pandas import DataFrame, Series
 from collections import defaultdict
 from itertools import product
@@ -41,7 +41,9 @@ class XNB:
     self.show_progress_bar = show_progress_bar
 
   @property
-  def feature_selection_dict(self) -> Dict[str, Set[str]]:
+  def feature_selection_dict(
+      self
+  ) -> Dict[Union[str, float], Set[Union[str, float]]]:
     """Obtain the feature selection dictionary.
 
     Each target class (key) is associated with a set of features (values).
@@ -142,7 +144,7 @@ class XNB:
       bw_function_name: BWFunctionName,
       n_sample: int,
       class_values: set
-  ) -> Dict[str, Dict[str, float]]:
+  ) -> Dict[Union[str, float], Dict[Union[str, float], float]]:
     bw_dict = {}
     bw_function = get_bandwidth_function(bw_function_name)
 
@@ -165,7 +167,7 @@ class XNB:
       y: Series,
       kernel: Kernel,
       algorithm: Algorithm,
-      bw_dict: Dict[str, Dict[str, float]],
+      bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       n_sample: int,
       class_values: set
   ) -> List[KDE]:
@@ -269,7 +271,7 @@ class XNB:
           self,
           ranking: DataFrame,
           class_values: set
-  ) -> Dict[str, Set[str]]:
+  ) -> Dict[str, Set[Union[str, float]]]:
     """Calculate the feature selection for each class."""
     threshold = 0.999
     stop_dict = defaultdict(dict[str, bool])
@@ -306,17 +308,25 @@ class XNB:
         )
         next_bar()
 
-    self._feature_selection_dict = defaultdict(set[str])
+    self._feature_selection_dict = defaultdict(set[Union[str, float]])
     for class_value in hellinger_dict.keys():
-      self._feature_selection_dict[class_value] = {
-          cfd.feature for cfd in hellinger_dict[class_value]
+      cv = (
+          float(class_value)
+          if isinstance(class_value, float)
+          else class_value
+      )
+      self._feature_selection_dict[cv] = {
+          float(cfd.feature)
+          if isinstance(cfd.feature, float)
+          else cfd.feature
+          for cfd in hellinger_dict[cv]
       }
     self._feature_selection_dict = dict(self._feature_selection_dict)
     return self._feature_selection_dict
 
   @staticmethod
   def _update_feature_selection_dict(
-          hellinger_dict: Dict[str, Set[_ClassFeatureDistance]],
+          hellinger_dict: Dict[Union[str, float], Set[_ClassFeatureDistance]],
           stop_dict: Dict[str, Dict[str, bool]],
           feature: str,
           hellinger: float,
@@ -324,7 +334,7 @@ class XNB:
           class_a: str,
           class_b: str
   ) -> Tuple[
-      Dict[str, Set[_ClassFeatureDistance]],
+      Dict[Union[str, float], Set[_ClassFeatureDistance]],
       Dict[str, Dict[str, bool]]
   ]:
     """Auxiliary method to calculate the feature selection."""
@@ -367,7 +377,7 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      bw_dict: Dict[str, Dict[str, float]],
+      bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       kernel: Kernel,
       algorithm: Algorithm
   ) -> Dict:
