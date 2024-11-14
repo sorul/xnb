@@ -2,6 +2,7 @@
 ### Fix
 - Bug in hash method of _ClassFeatureDistance class.
 - Bug in best estimator with rang==0.
+- Bug in HSJ method.
 
 # 0.2.3 (2024-10-02)
 ### Docs

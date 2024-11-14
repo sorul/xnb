@@ -104,7 +104,17 @@ def hsj(data: Series) -> float:
     h1 = h0 * hstep
     v1 = _sj(data, h1)
 
-  return h0 + (h1 - h0) * abs(v0) / (abs(v0) + abs(v1))
+  result = h0 + (h1 - h0) * abs(v0) / (abs(v0) + abs(v1))
+  if np.isnan(result):
+    warnings.warn(
+        'Bandwidth - HSJ - The HSJ function was going to return '
+        'NaN due to the nature of the data. To prevent errors, '
+        '0.0000001 for this feature and class will be returned instead. '
+        f'\nData:\n {data}', UserWarning, stacklevel=2
+    )
+    return 0.0000001
+  else:
+    return result
 
 
 def best_estimator(data: Series, n_sample: int) -> float:
@@ -233,7 +243,7 @@ def _empiricalcdf(data: np.ndarray, method: str = 'Hazen') -> np.ndarray:
   i = np.argsort(np.argsort(data)) + 1.
   N = len(data)
   method = method.lower()
-  # TODO: merece la pena tener todas estas opciones?
+  # TODO: Is it worth having all these options?
   if method == 'hazen':
     cdf = (i - 0.5) / N
   elif method == 'weibull':
