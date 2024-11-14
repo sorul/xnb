@@ -117,7 +117,7 @@ def best_estimator(data: Series, n_sample: int) -> float:
         ' The bandwidth result will be zero for this feature and class.'
         f'\nData:\n {data}', UserWarning, stacklevel=2
     )
-    return 0
+    return 0.0000001
   len_unique = len(data.unique())
   params = {
       'bandwidth': np.linspace(
