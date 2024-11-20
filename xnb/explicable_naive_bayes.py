@@ -397,15 +397,19 @@ class XNB:
     :param x: DataFrame containing the input data.
 
     ## Returns:
-    :return: Dictionary where each class is a key and the value is an array of log probabilities.
+    :return: Dictionary where each class is a key
+    and the value is an array of log probabilities.
     """
-    log_probs = {class_value: np.zeros(len(x))
-                 for class_value in self.feature_selection_dict}
+    log_probs = {
+        class_value: np.zeros(len(x))
+        for class_value in self.feature_selection_dict
+    }
 
     for class_value, features in self.feature_selection_dict.items():
       for feature in features:
           # Get KDE scores for the entire column
-        log_probs[class_value] += self._kernel_density_dict[class_value][feature].score_samples(
+        log_probs[class_value] += self\
+            ._kernel_density_dict[class_value][feature].score_samples(
             x[feature].values[:, np.newaxis]
         )
       # Add log prior probabilities
@@ -420,10 +424,10 @@ class XNB:
     :param log_probs: Dictionary of log probabilities for each class.
 
     ## Returns:
-    :return: Numpy array of shape (n_samples, n_classes) with normalized probabilities.
+    :return: Array of shape (n_samples, n_classes) with normalized probs.
     """
-    log_probs_matrix = np.vstack([log_probs[class_value]
-                                  for class_value in sorted(log_probs.keys())]).T
+    log_probs_matrix = np.vstack(
+        [log_probs[class_value] for class_value in sorted(log_probs.keys())]).T
     probs_matrix = np.exp(log_probs_matrix)
     probs_matrix /= probs_matrix.sum(axis=1, keepdims=True)
     return probs_matrix
