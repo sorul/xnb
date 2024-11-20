@@ -86,50 +86,14 @@ class XNB:
     self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
     self._calculate_target_representation(y, class_values)
 
-  def _calculate_class_log_probabilities(self, row: Series) -> Dict:
-    """Calculate the log probabilities for all classes for a single row.
-
-    ## Args:
-    :param row: A single row of input data.
-
-    ## Returns:
-    :return: Dict with class values as keys and log probabilities as values.
-    """
-    log_probs = {}
-    for class_value, features in self.feature_selection_dict.items():
-      log_prob = 0
-      for feature in features:
-          # Add log probability from KDE
-        log_prob += self._kernel_density_dict[class_value][feature]\
-            .score_samples(np.array([row[feature]])[:, np.newaxis])[0]
-      # Add log prior probability
-      log_prob += np.log(self._class_representation[class_value])
-      log_probs[class_value] = log_prob
-    return log_probs
-
-  def _normalize_probabilities(self, log_probs: Dict) -> Dict:
-    """Normalize log probabilities to return actual probabilities.
-
-    ## Args:
-    :param log_probs: Dictionary of log probabilities for each class.
-
-    ## Returns:
-    :return: Dictionary with normalized probabilities for each class.
-    """
-    total_prob = sum(np.exp(log_prob) for log_prob in log_probs.values())
-    return {
-        cls:
-        np.exp(log_prob) / total_prob for cls, log_prob in log_probs.items()
-    }
-
   def predict_proba(self, x: DataFrame) -> np.ndarray:
-    """Return the probabilities of each class for each row in the DataFrame.
+    """Return the probabilities of each class for all rows in the DataFrame.
 
     ## Args:
     :param x: DataFrame containing the input to predict probabilities.
 
     ## Returns:
-    :return: array where each row contains the probabilities for each class.
+    :return: Array where each row contains the probabilities for each class.
     """
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
@@ -137,21 +101,8 @@ class XNB:
     if cond1 or cond2:
       raise NotFittedError()
 
-    probabilities = []
-    p_len = len(x)
-    p_title = 'Calculating probabilities for each row'
-    with progress_bar(self.show_progress_bar, p_len, p_title) as next_bar:
-      for _, row in x.iterrows():
-        # Get log probabilities for the row
-        log_probs = self._calculate_class_log_probabilities(row)
-        # Normalize to actual probabilities
-        normalized_probs = self._normalize_probabilities(log_probs)
-        probabilities.append(
-            [normalized_probs[cls] for cls in sorted(normalized_probs.keys())]
-        )
-        next_bar()
-
-    return np.array(probabilities)
+    log_probs = self._calculate_class_log_probabilities(x)
+    return self._normalize_probabilities(log_probs)
 
   def predict(self, x: DataFrame) -> np.ndarray:
     """Return the predicted class for each row in the DataFrame.
@@ -168,18 +119,10 @@ class XNB:
     if cond1 or cond2:
       raise NotFittedError()
 
-    y_pred = []
-    p_len = len(x)
-    p_title = 'Calculating the prediction'
-    with progress_bar(self.show_progress_bar, p_len, p_title) as next_bar:
-      for _, row in x.iterrows():
-        # Get log probabilities for the row
-        log_probs = self._calculate_class_log_probabilities(row)
-        # Find the class with the maximum log probability
-        y_pred.append(max(log_probs.items(), key=lambda x: x[1])[0])
-        next_bar()
-
-    return np.array(y_pred)
+    log_probs = self._calculate_class_log_probabilities(x)
+    probabilities = self._normalize_probabilities(log_probs)
+    class_indices = np.argmax(probabilities, axis=1)
+    return np.array(sorted(log_probs.keys()))[class_indices]
 
   def _calculate_bandwidth(
       self,
@@ -446,6 +389,44 @@ class XNB:
         next_bar()
 
     return self._kernel_density_dict
+
+  def _calculate_class_log_probabilities(self, x: DataFrame) -> Dict:
+    """Calculate the log probabilities for all classes for multiple rows.
+
+    ## Args:
+    :param x: DataFrame containing the input data.
+
+    ## Returns:
+    :return: Dictionary where each class is a key and the value is an array of log probabilities.
+    """
+    log_probs = {class_value: np.zeros(len(x))
+                 for class_value in self.feature_selection_dict}
+
+    for class_value, features in self.feature_selection_dict.items():
+      for feature in features:
+          # Get KDE scores for the entire column
+        log_probs[class_value] += self._kernel_density_dict[class_value][feature].score_samples(
+            x[feature].values[:, np.newaxis]
+        )
+      # Add log prior probabilities
+      log_probs[class_value] += np.log(self._class_representation[class_value])
+
+    return log_probs
+
+  def _normalize_probabilities(self, log_probs: Dict) -> np.ndarray:
+    """Normalize log probabilities to return actual probabilities for all rows.
+
+    ## Args:
+    :param log_probs: Dictionary of log probabilities for each class.
+
+    ## Returns:
+    :return: Numpy array of shape (n_samples, n_classes) with normalized probabilities.
+    """
+    log_probs_matrix = np.vstack([log_probs[class_value]
+                                  for class_value in sorted(log_probs.keys())]).T
+    probs_matrix = np.exp(log_probs_matrix)
+    probs_matrix /= probs_matrix.sum(axis=1, keepdims=True)
+    return probs_matrix
 
 
 class NotFittedError(ValueError, AttributeError):

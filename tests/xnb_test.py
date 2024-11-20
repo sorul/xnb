@@ -227,9 +227,9 @@ def test_predict(is_benchmark, benchmark):
   assert accuracy_score(y_test, y_pred) > 0.5
 
 
-def test_predict_proba(is_benchmark, benchmark):
+def test_proba_predict(is_benchmark, benchmark):
   """
-  poetry run pytest -k test_predict -v
+  poetry run pytest -k test_proba_predict -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   x_train = x.sample(frac=0.8, random_state=1)
