@@ -86,57 +86,6 @@ class XNB:
     self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
     self._calculate_target_representation(y, class_values)
 
-  def predict2(self, x: DataFrame) -> np.ndarray:
-    """Return the predicted class for each row in the DataFrame.
-
-    ## Args:
-    :param x: DataFrame containing the input to predict
-
-    ## Returns:
-    :return: Numpy array containing the predicted class for each row
-    """
-    cond1 = not hasattr(self, '_kernel_density_dict')
-    cond2 = not hasattr(self, '_class_representation')
-
-    if cond1 or cond2:
-      raise NotFittedError()
-
-    y_pred = []
-    p_len = len(x)
-    p_title = 'Calculating the prediction'
-    with progress_bar(self.show_progress_bar, p_len, p_title) as next_bar:
-      for _, row in x.iterrows():
-        # Calculating the probability of each class
-        y, m, s = None, -np.inf, 0
-        # Running through the final features
-        for class_value, features in self.feature_selection_dict.items():
-          pr = 0
-          for feature in features:
-            # We get the probabilities with KDE. Instead of x_sample (50)
-            # records, we pass this time only one
-            pr += self._kernel_density_dict[class_value][feature].score_samples(
-                np.array([row[feature]])[:, np.newaxis])[0]
-          # The last operand is the number of times a record with that class
-          # is given in the train dataset
-          probability = pr + np.log(self._class_representation[class_value])
-          s += probability
-          # We save the class with a higher probability
-          if probability > m:
-            m, y = probability, class_value
-
-        if s > -np.inf:
-          y_pred.append(y)
-        else:
-          # If none of the classes has a probability greater than zero,
-          # we assign the class that is most representative of the train dataset
-          k = max(self._class_representation,
-                  key=self._class_representation.get)  # type: ignore
-          y_pred.append((self._class_representation[k]))
-
-        next_bar()
-
-    return np.array(y_pred)
-
   def _calculate_class_log_probabilities(self, row: Series) -> Dict:
     """Calculate the log probabilities for all classes for a single row.
 
