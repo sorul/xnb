@@ -1,4 +1,4 @@
-# 0.3.0
+# 0.3.0 (2024-11-20)
 ### Feat
 - New predict_proba method.
 
