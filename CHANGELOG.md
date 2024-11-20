@@ -1,8 +1,15 @@
-# 0.2.4
+# 0.3.0
+### Feat
+- New predict_proba method.
+
+### Refactor
+- Predict methods refactored to improve performance.
+
 ### Fix
 - Bug in hash method of _ClassFeatureDistance class.
 - Bug in best estimator with rang==0.
 - Bug in HSJ method.
+
 
 # 0.2.3 (2024-10-02)
 ### Docs
