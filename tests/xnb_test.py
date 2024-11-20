@@ -3,11 +3,12 @@ from pathlib import Path
 import sklearn.model_selection as model_selection
 from typing import Tuple
 from collections import defaultdict
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_auc_score
 import pandas as pd
 from itertools import product
 import pytest
 from numpy import array
+
 
 from xnb import XNB, NotFittedError
 from xnb.enums import BWFunctionName, Kernel, Algorithm
@@ -222,6 +223,31 @@ def test_predict(is_benchmark, benchmark):
     y_pred = xnb.predict(x_test)
 
   assert len(y_pred) == len(y_test)
+  assert len(set(y_pred)) == len(set(y_test))
+  assert accuracy_score(y_test, y_pred) > 0.5
+
+
+def test_proba_predict(is_benchmark, benchmark):
+  """
+  poetry run pytest -k test_proba_predict -v
+  """
+  x, y = load_dataset(Path('data/iris.csv'))
+  x_train = x.sample(frac=0.8, random_state=1)
+  y_train = y[x_train.index]
+  x_test = x.drop(x_train.index)
+  y_test = y[x_test.index]
+
+  xnb = XNB()
+  xnb.fit(x_train, y_train)
+
+  if is_benchmark:
+    y_pred = benchmark(xnb.predict_proba, x_test)
+  else:
+    y_pred = xnb.predict_proba(x_test)
+
+  assert y_pred.shape[0] == len(y_test)
+  assert y_pred.shape[1] == len(set(y_test))
+  assert roc_auc_score(y_test, y_pred, multi_class='ovr') > 0.5
 
 
 def test_NotFittedError():

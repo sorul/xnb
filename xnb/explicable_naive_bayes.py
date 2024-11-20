@@ -1,6 +1,6 @@
 """Explicable Naive Bayes."""
 from sklearn.neighbors import KernelDensity
-from typing import Tuple, List, Dict, Set
+from typing import Tuple, List, Dict, Set, Union
 from pandas import DataFrame, Series
 from collections import defaultdict
 from itertools import product
@@ -26,7 +26,7 @@ class _ClassFeatureDistance:
     self.distance = distance
 
   def __hash__(self):
-    return hash(self.class_value + self.feature)
+    return hash(str(self.class_value) + str(self.feature))
 
 
 class XNB:
@@ -41,7 +41,9 @@ class XNB:
     self.show_progress_bar = show_progress_bar
 
   @property
-  def feature_selection_dict(self) -> Dict[str, Set[str]]:
+  def feature_selection_dict(
+      self
+  ) -> Dict[Union[str, float], Set[Union[str, float]]]:
     """Obtain the feature selection dictionary.
 
     Each target class (key) is associated with a set of features (values).
@@ -84,14 +86,14 @@ class XNB:
     self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
     self._calculate_target_representation(y, class_values)
 
-  def predict(self, x: DataFrame) -> np.ndarray:
-    """Return the predicted class for each row in the DataFrame.
+  def predict_proba(self, x: DataFrame) -> np.ndarray:
+    """Return the probabilities of each class for all rows in the DataFrame.
 
     ## Args:
-    :param x: DataFrame containing the input to predict
+    :param x: DataFrame containing the input to predict probabilities.
 
     ## Returns:
-    :return: Numpy array containing the predicted class for each row
+    :return: Array where each row contains the probabilities for each class.
     """
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
@@ -99,41 +101,28 @@ class XNB:
     if cond1 or cond2:
       raise NotFittedError()
 
-    y_pred = []
-    p_len = len(x)
-    p_title = 'Calculating the prediction'
-    with progress_bar(self.show_progress_bar, p_len, p_title) as next_bar:
-      for _, row in x.iterrows():
-        # Calculating the probability of each class
-        y, m, s = None, -np.inf, 0
-        # Running through the final features
-        for class_value, features in self.feature_selection_dict.items():
-          pr = 0
-          for feature in features:
-            # We get the probabilities with KDE. Instead of x_sample (50)
-            # records, we pass this time only one
-            pr += self._kernel_density_dict[class_value][feature].score_samples(
-                np.array([row[feature]])[:, np.newaxis])[0]
-          # The last operand is the number of times a record with that class
-          # is given in the train dataset
-          probability = pr + np.log(self._class_representation[class_value])
-          s += probability
-          # We save the class with a higher probability
-          if probability > m:
-            m, y = probability, class_value
+    log_probs = self._calculate_class_log_probabilities(x)
+    return self._normalize_probabilities(log_probs)
 
-        if s > -np.inf:
-          y_pred.append(y)
-        else:
-          # If none of the classes has a probability greater than zero,
-          # we assign the class that is most representative of the train dataset
-          k = max(self._class_representation,
-                  key=self._class_representation.get)  # type: ignore
-          y_pred.append((self._class_representation[k]))
+  def predict(self, x: DataFrame) -> np.ndarray:
+    """Return the predicted class for each row in the DataFrame.
 
-        next_bar()
+    ## Args:
+    :param x: DataFrame containing the input to predict.
 
-    return np.array(y_pred)
+    ## Returns:
+    :return: Numpy array containing the predicted class for each row.
+    """
+    cond1 = not hasattr(self, '_kernel_density_dict')
+    cond2 = not hasattr(self, '_class_representation')
+
+    if cond1 or cond2:
+      raise NotFittedError()
+
+    log_probs = self._calculate_class_log_probabilities(x)
+    probabilities = self._normalize_probabilities(log_probs)
+    class_indices = np.argmax(probabilities, axis=1)
+    return np.array(sorted(log_probs.keys()))[class_indices]
 
   def _calculate_bandwidth(
       self,
@@ -142,7 +131,7 @@ class XNB:
       bw_function_name: BWFunctionName,
       n_sample: int,
       class_values: set
-  ) -> Dict[str, Dict[str, float]]:
+  ) -> Dict[Union[str, float], Dict[Union[str, float], float]]:
     bw_dict = {}
     bw_function = get_bandwidth_function(bw_function_name)
 
@@ -165,7 +154,7 @@ class XNB:
       y: Series,
       kernel: Kernel,
       algorithm: Algorithm,
-      bw_dict: Dict[str, Dict[str, float]],
+      bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       n_sample: int,
       class_values: set
   ) -> List[KDE]:
@@ -269,7 +258,7 @@ class XNB:
           self,
           ranking: DataFrame,
           class_values: set
-  ) -> Dict[str, Set[str]]:
+  ) -> Dict[str, Set[Union[str, float]]]:
     """Calculate the feature selection for each class."""
     threshold = 0.999
     stop_dict = defaultdict(dict[str, bool])
@@ -306,17 +295,25 @@ class XNB:
         )
         next_bar()
 
-    self._feature_selection_dict = defaultdict(set[str])
+    self._feature_selection_dict = defaultdict(set[Union[str, float]])
     for class_value in hellinger_dict.keys():
-      self._feature_selection_dict[class_value] = {
-          cfd.feature for cfd in hellinger_dict[class_value]
+      cv = (
+          float(class_value)
+          if isinstance(class_value, float)
+          else class_value
+      )
+      self._feature_selection_dict[cv] = {
+          float(cfd.feature)
+          if isinstance(cfd.feature, float)
+          else cfd.feature
+          for cfd in hellinger_dict[cv]
       }
     self._feature_selection_dict = dict(self._feature_selection_dict)
     return self._feature_selection_dict
 
   @staticmethod
   def _update_feature_selection_dict(
-          hellinger_dict: Dict[str, Set[_ClassFeatureDistance]],
+          hellinger_dict: Dict[Union[str, float], Set[_ClassFeatureDistance]],
           stop_dict: Dict[str, Dict[str, bool]],
           feature: str,
           hellinger: float,
@@ -324,7 +321,7 @@ class XNB:
           class_a: str,
           class_b: str
   ) -> Tuple[
-      Dict[str, Set[_ClassFeatureDistance]],
+      Dict[Union[str, float], Set[_ClassFeatureDistance]],
       Dict[str, Dict[str, bool]]
   ]:
     """Auxiliary method to calculate the feature selection."""
@@ -367,7 +364,7 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      bw_dict: Dict[str, Dict[str, float]],
+      bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       kernel: Kernel,
       algorithm: Algorithm
   ) -> Dict:
@@ -392,6 +389,48 @@ class XNB:
         next_bar()
 
     return self._kernel_density_dict
+
+  def _calculate_class_log_probabilities(self, x: DataFrame) -> Dict:
+    """Calculate the log probabilities for all classes for multiple rows.
+
+    ## Args:
+    :param x: DataFrame containing the input data.
+
+    ## Returns:
+    :return: Dictionary where each class is a key
+    and the value is an array of log probabilities.
+    """
+    log_probs = {
+        class_value: np.zeros(len(x))
+        for class_value in self.feature_selection_dict
+    }
+
+    for class_value, features in self.feature_selection_dict.items():
+      for feature in features:
+          # Get KDE scores for the entire column
+        log_probs[class_value] += self\
+            ._kernel_density_dict[class_value][feature].score_samples(
+            x[feature].values[:, np.newaxis]
+        )
+      # Add log prior probabilities
+      log_probs[class_value] += np.log(self._class_representation[class_value])
+
+    return log_probs
+
+  def _normalize_probabilities(self, log_probs: Dict) -> np.ndarray:
+    """Normalize log probabilities to return actual probabilities for all rows.
+
+    ## Args:
+    :param log_probs: Dictionary of log probabilities for each class.
+
+    ## Returns:
+    :return: Array of shape (n_samples, n_classes) with normalized probs.
+    """
+    log_probs_matrix = np.vstack(
+        [log_probs[class_value] for class_value in sorted(log_probs.keys())]).T
+    probs_matrix = np.exp(log_probs_matrix)
+    probs_matrix /= probs_matrix.sum(axis=1, keepdims=True)
+    return probs_matrix
 
 
 class NotFittedError(ValueError, AttributeError):

@@ -14,6 +14,7 @@ from pandas import Series
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 from typing import Callable, Union
+import warnings
 
 from xnb.enums import BWFunctionName as BFN
 
@@ -103,12 +104,30 @@ def hsj(data: Series) -> float:
     h1 = h0 * hstep
     v1 = _sj(data, h1)
 
-  return h0 + (h1 - h0) * abs(v0) / (abs(v0) + abs(v1))
+  result = h0 + (h1 - h0) * abs(v0) / (abs(v0) + abs(v1))
+  if np.isnan(result):
+    warnings.warn(
+        'Bandwidth - HSJ - The HSJ function was going to return '
+        'NaN due to the nature of the data. To prevent errors, '
+        '0.0000001 for this feature and class will be returned instead. '
+        f'\nData:\n {data}', UserWarning, stacklevel=2
+    )
+    return 0.0000001
+  else:
+    return result
 
 
 def best_estimator(data: Series, n_sample: int) -> float:
   """Return the best estimator of the bandwidth using GridSearchCV."""
   rang = abs(max(data) - min(data))
+  if rang == 0:
+    warnings.warn(
+        'Bandwidth - Best Estimator - There is no deviation '
+        'in one of the features provided for a specific class.'
+        ' The bandwidth result will be 0.0000001 for this feature and class.'
+        f'\nData:\n {data}', UserWarning, stacklevel=2
+    )
+    return 0.0000001
   len_unique = len(data.unique())
   params = {
       'bandwidth': np.linspace(
@@ -224,7 +243,7 @@ def _empiricalcdf(data: np.ndarray, method: str = 'Hazen') -> np.ndarray:
   i = np.argsort(np.argsort(data)) + 1.
   N = len(data)
   method = method.lower()
-  # TODO: merece la pena tener todas estas opciones?
+  # TODO: Is it worth having all these options?
   if method == 'hazen':
     cdf = (i - 0.5) / N
   elif method == 'weibull':
