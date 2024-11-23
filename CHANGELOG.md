@@ -1,3 +1,7 @@
+# 0.3.1
+### Fix
+- Tornado dev dependency has an HTTP cookie parsing DoS vulnerability, fixed in 6.4.2.
+
 # 0.3.0 (2024-11-20)
 ### Feat
 - New predict_proba method.
