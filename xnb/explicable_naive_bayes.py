@@ -231,7 +231,8 @@ class XNB:
         by=['hellinger', 'feature', 'p0', 'p1'],
         ascending=[False, True, True, True]
     )
-    return ranking[ranking.hellinger > 0.5].reset_index(drop=True)
+    threshold = sum(ranking.hellinger) / len(ranking.hellinger)
+    return ranking[ranking.hellinger > threshold].reset_index(drop=True)
 
   @staticmethod
   def _hellinger_distance(p: np.ndarray, q: np.ndarray) -> float:

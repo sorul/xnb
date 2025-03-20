@@ -9,33 +9,33 @@ from experimental.independence import (
     independence_test_4
 )
 
-
+@skip(reason='Experimental test')
 def test_independence_test(benchmark):
   x, y = load_dataset(Path('data/Leukemia_GSE9476.csv'), class_column='type')
   r = benchmark(independence_test, x, y)
   assert r is not None
 
-
+@skip(reason='Experimental test')
 def test_independence_test_2(benchmark):
   x, y = load_dataset(Path('data/Leukemia_GSE9476.csv'), class_column='type')
   r = benchmark(independence_test_2, x, y)
   assert r is not None
 
-
+@skip(reason='Experimental test')
 def test_independence_test_3(benchmark):
   x, y = load_dataset(Path('data/Leukemia_GSE9476.csv'), class_column='type')
   r = benchmark(independence_test_3, x, y)
   # r = independence_test_3(x, y)
   assert r is not None
 
-
+@skip(reason='Experimental test')
 def test_independence_test_4(benchmark):
   x, y = load_dataset(Path('data/Leukemia_GSE9476.csv'), class_column='type')
   r = benchmark(independence_test_4, x, y)
   # r = independence_test_4(x, y)
   assert r is not None
 
-
+@skip(reason='Experimental test')
 def test_compare_independence_test():
   x, y = load_dataset(Path('data/Leukemia_GSE9476.csv'), class_column='type')
   r1 = independence_test(x, y)

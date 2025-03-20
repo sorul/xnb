@@ -24,27 +24,27 @@ def test_accuracy_benchmark_naive_bayes():
   skf = model_selection.StratifiedKFold(
       n_splits=5, shuffle=True, random_state=0)
   for train_index, test_index in skf.split(x, y):
-    x_train, X_test = x.iloc[train_index], x.iloc[test_index]
+    x_train, x_test = x.iloc[train_index], x.iloc[test_index]
     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
     # EXPLICABLE NB
     xnb = XNB()
     xnb.fit(x_train, y_train)
     feature_selection = xnb.feature_selection_dict
-    y_pred = xnb.predict(X_test)
+    y_pred = xnb.predict(x_test)
     accuracy_list['xnb'].append(accuracy_score(y_test, y_pred))
 
     # ORIGINAL NB
     nb = GaussianNB()
     nb.fit(x_train, y_train)
-    y_pred = nb.predict(X_test)
+    y_pred = nb.predict(x_test)
     accuracy_list['nb1'].append(accuracy_score(y_test, y_pred))
 
     # FEATURE SELECTION NB
     new_cols = list({x for v in feature_selection.values() for x in v})
     nb = GaussianNB()
     nb.fit(x_train[new_cols], y_train)
-    y_pred = nb.predict(X_test[new_cols])
+    y_pred = nb.predict(x_test[new_cols])
     accuracy_list['nb2'].append(accuracy_score(y_test, y_pred))
     n_features_selected.append(len(new_cols))
 

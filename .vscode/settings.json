@@ -29,5 +29,6 @@
   },
   "files.associations": {
     "*.mq5": "cpp"
-  }
+  },
+  "CodeGPT.apiKey": "CodeGPT Plus Beta"
 }
