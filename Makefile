@@ -13,7 +13,7 @@ dev_requirements:
 push_develop:
 	@make requirements
 	@make dev_requirements
-	@git commit --allow-empty -am "updating requirements and pushing to develop"
+	@git commit --allow-empty -am "updating requirements and pushing to git"
 	@git push
 
 tag:

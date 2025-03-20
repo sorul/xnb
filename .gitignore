@@ -167,3 +167,4 @@ xnb_jesus/
 # Files
 main.py
 *.lprof
+*.ipynb

@@ -1,5 +1,6 @@
-# 0.3.1
+# 0.3.1 (2025-03-20)
 ### Fix
+- Hellinger threshold fixed to ensure it always returns features.
 - Tornado dev dependency has an HTTP cookie parsing DoS vulnerability, fixed in 6.4.2.
 
 # 0.3.0 (2024-11-20)
