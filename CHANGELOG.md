@@ -1,4 +1,10 @@
-# 0.3.2
+# 0.4.0
+### Refactor
+- These "fit" parameters are now in XNB constructor:
+    - bw_function
+    - kernel
+    - algorithm
+    - n_sample
 ### Style
 - HTML representation when display the XNB object in a Jupyter notebook.
 

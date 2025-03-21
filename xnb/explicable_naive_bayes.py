@@ -33,12 +33,28 @@ class _ClassFeatureDistance:
 class XNB(BaseEstimator):
   """Class to perform Explainable Naive Bayes."""
 
-  def __init__(self, show_progress_bar: bool = False) -> None:
+  def __init__(
+      self,
+      bw_function: BWFunctionName = BWFunctionName.HSILVERMAN,
+      kernel: Kernel = Kernel.GAUSSIAN,
+      algorithm: Algorithm = Algorithm.AUTO,
+      n_sample: int = 50,
+      show_progress_bar: bool = False
+  ) -> None:
     """Initialize the Explainable Naive Bayes object.
 
     ## Args:
+    :param bw_function: Bandwidth function to use, defaults to
+    BWFunctionName.HSILVERMAN
+    :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
+    :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
+    :param n_sample: Number of samples to use, defaults to 50
     :param show_progress_bar: Whether to show progress bars.
     """
+    self.bw_function = bw_function
+    self.kernel = kernel
+    self.algorithm = algorithm
+    self.n_sample = n_sample
     self.show_progress_bar = show_progress_bar
 
   @property
@@ -75,33 +91,24 @@ class XNB(BaseEstimator):
       self,
       x: DataFrame,
       y: Series,
-      bw_function: BWFunctionName = BWFunctionName.HSILVERMAN,
-      kernel: Kernel = Kernel.GAUSSIAN,
-      algorithm: Algorithm = Algorithm.AUTO,
-      n_sample: int = 50
   ) -> 'XNB':
     """Calculate the best feature selection to be able to predict later.
 
     ## Args:
     :param x: DataFrame containing the input features
     :param y: Series containing the target variable
-    :param bw_function: Bandwidth function to use, defaults to
-    BWFunctionName.HSILVERMAN
-    :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
-    :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
-    :param n_sample: Number of samples to use, defaults to 50
 
     ## Returns:
     :return: Returns the instance itself.
     """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
-        x, y, bw_function, n_sample, class_values)
+        x, y, self.bw_function, self.n_sample, class_values)
     kde_list = self._calculate_kdes(
-        x, y, kernel, algorithm, bw_dict, n_sample, class_values)
+        x, y, self.kernel, self.algorithm, bw_dict, self.n_sample, class_values)
     ranking = self._calculate_divergence(kde_list)
     self._calculate_feature_selection(ranking, class_values)
-    self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
+    self._calculate_necessary_kde(x, y, bw_dict, self.kernel, self.algorithm)
     self._calculate_target_representation(y, class_values)
 
     self.is_fitted_ = True

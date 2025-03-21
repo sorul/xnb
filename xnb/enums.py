@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class BWFunctionName(Enum):
+class BWFunctionName(str, Enum):
   """Enum class to select the bandwidth function."""
 
   HSILVERMAN = 'hsilverman'
