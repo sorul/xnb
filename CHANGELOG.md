@@ -1,3 +1,7 @@
+# 0.3.2
+### Style
+- HTML representation when display the XNB object in a Jupyter notebook.
+
 # 0.3.1 (2025-03-20)
 ### Fix
 - Hellinger threshold fixed to ensure it always returns features.

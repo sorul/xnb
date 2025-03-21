@@ -6,6 +6,7 @@ from collections import defaultdict
 from itertools import product
 from math import sqrt
 import numpy as np
+from sklearn.base import BaseEstimator
 
 from xnb._kde_object import KDE
 from xnb.enums import Algorithm, BWFunctionName, Kernel
@@ -29,7 +30,7 @@ class _ClassFeatureDistance:
     return hash(str(self.class_value) + str(self.feature))
 
 
-class XNB:
+class XNB(BaseEstimator):
   """Class to perform Explainable Naive Bayes."""
 
   def __init__(self, show_progress_bar: bool = False) -> None:
@@ -53,6 +54,23 @@ class XNB:
     else:
       raise NotFittedError()
 
+  def _repr_html_(self):
+    """Return html representation of the model."""
+    return ('''
+      <style>
+          .sklearn-mime-model {{
+              display: inline-block;
+              padding: 8px 12px;
+              background: #f8f9fa;
+              border-left: 5px solid #007bff;
+              border-radius: 4px;
+              font-family: monospace;
+              font-size: 14px;
+          }}  # noqa
+      </style>
+    '''
+    )  # noqa
+
   def fit(
       self,
       x: DataFrame,
@@ -61,7 +79,7 @@ class XNB:
       kernel: Kernel = Kernel.GAUSSIAN,
       algorithm: Algorithm = Algorithm.AUTO,
       n_sample: int = 50
-  ) -> None:
+  ) -> 'XNB':
     """Calculate the best feature selection to be able to predict later.
 
     ## Args:
@@ -74,7 +92,7 @@ class XNB:
     :param n_sample: Number of samples to use, defaults to 50
 
     ## Returns:
-    :return: None
+    :return: Returns the instance itself.
     """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
@@ -85,6 +103,9 @@ class XNB:
     self._calculate_feature_selection(ranking, class_values)
     self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
     self._calculate_target_representation(y, class_values)
+
+    self.is_fitted_ = True
+    return self
 
   def predict_proba(self, x: DataFrame) -> np.ndarray:
     """Return the probabilities of each class for all rows in the DataFrame.
@@ -97,8 +118,9 @@ class XNB:
     """
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
+    cond3 = not hasattr(self, 'is_fitted_')
 
-    if cond1 or cond2:
+    if cond1 or cond2 or cond3:
       raise NotFittedError()
 
     log_probs = self._calculate_class_log_probabilities(x)
@@ -115,8 +137,9 @@ class XNB:
     """
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
+    cond3 = not hasattr(self, 'is_fitted_')
 
-    if cond1 or cond2:
+    if cond1 or cond2 or cond3:
       raise NotFittedError()
 
     log_probs = self._calculate_class_log_probabilities(x)
