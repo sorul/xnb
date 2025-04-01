@@ -10,6 +10,10 @@ class BWFunctionName(str, Enum):
   HSJ = 'hsj'
   BEST_ESTIMATOR = 'best_estimator'
 
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value
+
 
 class Kernel(str, Enum):
   """Enum class to select the kernel function."""
@@ -21,6 +25,10 @@ class Kernel(str, Enum):
   EXPONENTIAL = 'exponential'
   LINEAR = 'linear'
 
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value
+
 
 class Algorithm(str, Enum):
   """Enum class to select the algorithm."""
@@ -28,3 +36,7 @@ class Algorithm(str, Enum):
   KD_TREE = 'kd_tree'
   BALL_TREE = 'ball_tree'
   AUTO = 'auto'
+
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value

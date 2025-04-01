@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-def get_bandwidth_function(bf: BFN) -> Callable:
+def get_bandwidth_function(bf: str) -> Callable:
   """Return a bandwidth function based on the given BWFunctionName.
 
   Example of use:

@@ -5,6 +5,7 @@
     - kernel
     - algorithm
     - n_sample
+- Enum parameters (bw_function, kernel, algorithm) allow str types as well.
 ### Style
 - HTML representation when display the XNB object in a Jupyter notebook.
 

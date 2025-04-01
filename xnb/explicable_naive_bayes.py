@@ -35,9 +35,9 @@ class XNB(BaseEstimator):
 
   def __init__(
       self,
-      bw_function: BWFunctionName = BWFunctionName.HSILVERMAN,
-      kernel: Kernel = Kernel.GAUSSIAN,
-      algorithm: Algorithm = Algorithm.AUTO,
+      bw_function: Union[BWFunctionName, str] = BWFunctionName.HSILVERMAN,
+      kernel: Union[Kernel, str] = Kernel.GAUSSIAN,
+      algorithm: Union[Algorithm, str] = Algorithm.AUTO,
       n_sample: int = 50,
       show_progress_bar: bool = False
   ) -> None:
@@ -51,9 +51,9 @@ class XNB(BaseEstimator):
     :param n_sample: Number of samples to use, defaults to 50
     :param show_progress_bar: Whether to show progress bars.
     """
-    self.bw_function = bw_function
-    self.kernel = kernel
-    self.algorithm = algorithm
+    self.bw_function = str(bw_function)
+    self.kernel = str(kernel)
+    self.algorithm = str(algorithm)
     self.n_sample = n_sample
     self.show_progress_bar = show_progress_bar
 
@@ -158,7 +158,7 @@ class XNB(BaseEstimator):
       self,
       x: DataFrame,
       y: Series,
-      bw_function_name: BWFunctionName,
+      bw_function_name: str,
       n_sample: int,
       class_values: set
   ) -> Dict[Union[str, float], Dict[Union[str, float], float]]:
@@ -182,8 +182,8 @@ class XNB(BaseEstimator):
       self,
       x: DataFrame,
       y: Series,
-      kernel: Kernel,
-      algorithm: Algorithm,
+      kernel: str,
+      algorithm: str,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       n_sample: int,
       class_values: set
@@ -206,9 +206,9 @@ class XNB(BaseEstimator):
 
           # Fit Kernel Density
           kde = KernelDensity(
-              kernel=kernel.value,
+              kernel=kernel,
               bandwidth=bw,
-              algorithm=algorithm.value
+              algorithm=algorithm
           ).fit(data.values[:, np.newaxis])
 
           # Calculate y_points
@@ -396,8 +396,8 @@ class XNB(BaseEstimator):
       x: DataFrame,
       y: Series,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
-      kernel: Kernel,
-      algorithm: Algorithm
+      kernel: str,
+      algorithm: str
   ) -> Dict:
     """Calculate the KDE for each class."""
     self._kernel_density_dict = {}
@@ -412,9 +412,9 @@ class XNB(BaseEstimator):
           data = data_class[feature]
           bw = bw_dict[class_value][feature]
           kde = KernelDensity(
-              kernel=kernel.value,
+              kernel=kernel,
               bandwidth=bw,
-              algorithm=algorithm.value
+              algorithm=algorithm
           ).fit(data.values[:, np.newaxis])
           self._kernel_density_dict[class_value][feature] = kde
         next_bar()
