@@ -123,12 +123,7 @@ class XNB(BaseEstimator):
     ## Returns:
     :return: Array where each row contains the probabilities for each class.
     """
-    cond1 = not hasattr(self, '_kernel_density_dict')
-    cond2 = not hasattr(self, '_class_representation')
-    cond3 = not hasattr(self, 'is_fitted_')
-
-    if cond1 or cond2 or cond3:
-      raise NotFittedError()
+    self._check_if_not_fitted_error()
 
     log_probs = self._calculate_class_log_probabilities(x)
     return self._normalize_probabilities(log_probs)
@@ -142,17 +137,20 @@ class XNB(BaseEstimator):
     ## Returns:
     :return: Numpy array containing the predicted class for each row.
     """
+    self._check_if_not_fitted_error()
+
+    log_probs = self._calculate_class_log_probabilities(x)
+    probabilities = self.predict_proba(x)
+    class_indices = np.argmax(probabilities, axis=1)
+    return np.array(sorted(log_probs.keys()))[class_indices]
+
+  def _check_if_not_fitted_error(self) -> None:
     cond1 = not hasattr(self, '_kernel_density_dict')
     cond2 = not hasattr(self, '_class_representation')
     cond3 = not hasattr(self, 'is_fitted_')
 
     if cond1 or cond2 or cond3:
       raise NotFittedError()
-
-    log_probs = self._calculate_class_log_probabilities(x)
-    probabilities = self._normalize_probabilities(log_probs)
-    class_indices = np.argmax(probabilities, axis=1)
-    return np.array(sorted(log_probs.keys()))[class_indices]
 
   def _calculate_bandwidth(
       self,
