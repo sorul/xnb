@@ -41,15 +41,19 @@ class XNB(BaseEstimator):
       n_sample: int = 50,
       show_progress_bar: bool = False
   ) -> None:
-    """Initialize the Explainable Naive Bayes object.
+    """Initialize the Explainable Naive Bayes model.
 
-    ## Args:
-    :param bw_function: Bandwidth function to use, defaults to
-    BWFunctionName.HSILVERMAN
-    :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
-    :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
-    :param n_sample: Number of samples to use, defaults to 50
-    :param show_progress_bar: Whether to show progress bars.
+    Args:
+        bw_function (Union[BWFunctionName, str], optional): Bandwidth selection
+          function. Defaults to BWFunctionName.HSILVERMAN.
+        kernel (Union[Kernel, str], optional): Kernel type for density
+          estimation. Defaults to Kernel.GAUSSIAN.
+        algorithm (Union[Algorithm, str], optional): Algorithm for kernel
+          density estimation. Defaults to Algorithm.AUTO.
+        n_sample (int, optional): Number of samples for density estimation.
+          Defaults to 50.
+        show_progress_bar (bool, optional): Whether to display a progress bar
+          during fitting. Defaults to False.
     """
     self.bw_function = str(bw_function)
     self.kernel = str(kernel)
@@ -94,12 +98,12 @@ class XNB(BaseEstimator):
   ) -> 'XNB':
     """Calculate the best feature selection to be able to predict later.
 
-    ## Args:
-    :param x: DataFrame containing the input features
-    :param y: Series containing the target variable
+    Args:
+        x (DataFrame):  DataFrame containing the input features
+        y (Series): Series containing the target variable
 
-    ## Returns:
-    :return: Returns the instance itself.
+    Returns:
+        XNB: Returns the instance itself.
     """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
@@ -117,11 +121,12 @@ class XNB(BaseEstimator):
   def predict_proba(self, x: DataFrame) -> np.ndarray:
     """Return the probabilities of each class for all rows in the DataFrame.
 
-    ## Args:
-    :param x: DataFrame containing the input to predict probabilities.
+    Args:
+        x (DataFrame): DataFrame containing the input to predict probabilities.
 
-    ## Returns:
-    :return: Array where each row contains the probabilities for each class.
+    Returns:
+        np.ndarray: Array where each row contains the probabilities for each
+        class.
     """
     self._check_if_not_fitted_error()
 
@@ -131,11 +136,11 @@ class XNB(BaseEstimator):
   def predict(self, x: DataFrame) -> np.ndarray:
     """Return the predicted class for each row in the DataFrame.
 
-    ## Args:
-    :param x: DataFrame containing the input to predict.
+    Args:
+        x (DataFrame): DataFrame containing the input to predict.
 
-    ## Returns:
-    :return: Numpy array containing the predicted class for each row.
+    Returns:
+        np.ndarray: Numpy array containing the predicted class for each row.
     """
     self._check_if_not_fitted_error()
 
