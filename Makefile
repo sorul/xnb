@@ -5,9 +5,11 @@ test:
 	@poetry run pytest --cov=xnb tests
 
 requirements:
+	@poetry lock
 	@poetry export -f requirements.txt --output requirements.txt --without-hashes
 
 dev_requirements:
+	@poetry lock
 	@poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
 
 push_develop:
