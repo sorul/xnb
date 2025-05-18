@@ -1,3 +1,18 @@
+# 0.4.1 (2025-05-18)
+### Fix
+- Tornado dev dependency it logs a warning but continues trying to parse the remainder of the data. This allows remote attackers to generate an extremely high volume of logs, constituting a DoS attack vulnerability, fixed in 6.5.0
+
+# 0.4.0
+### Refactor
+- These "fit" parameters are now in XNB constructor:
+    - bw_function
+    - kernel
+    - algorithm
+    - n_sample
+- Enum parameters (bw_function, kernel, algorithm) allow str types as well.
+### Style
+- HTML representation when display the XNB object in a Jupyter notebook.
+
 # 0.3.1 (2025-03-20)
 ### Fix
 - Hellinger threshold fixed to ensure it always returns features.

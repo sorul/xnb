@@ -2,13 +2,17 @@
 from enum import Enum
 
 
-class BWFunctionName(Enum):
+class BWFunctionName(str, Enum):
   """Enum class to select the bandwidth function."""
 
   HSILVERMAN = 'hsilverman'
   HSCOTT = 'hscott'
   HSJ = 'hsj'
   BEST_ESTIMATOR = 'best_estimator'
+
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value
 
 
 class Kernel(str, Enum):
@@ -21,6 +25,10 @@ class Kernel(str, Enum):
   EXPONENTIAL = 'exponential'
   LINEAR = 'linear'
 
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value
+
 
 class Algorithm(str, Enum):
   """Enum class to select the algorithm."""
@@ -28,3 +36,7 @@ class Algorithm(str, Enum):
   KD_TREE = 'kd_tree'
   BALL_TREE = 'ball_tree'
   AUTO = 'auto'
+
+  def __str__(self) -> str:
+    """Return the enum value."""
+    return self.value

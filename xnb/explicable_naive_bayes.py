@@ -6,6 +6,7 @@ from collections import defaultdict
 from itertools import product
 from math import sqrt
 import numpy as np
+from sklearn.base import BaseEstimator
 
 from xnb._kde_object import KDE
 from xnb.enums import Algorithm, BWFunctionName, Kernel
@@ -29,15 +30,35 @@ class _ClassFeatureDistance:
     return hash(str(self.class_value) + str(self.feature))
 
 
-class XNB:
+class XNB(BaseEstimator):
   """Class to perform Explainable Naive Bayes."""
 
-  def __init__(self, show_progress_bar: bool = False) -> None:
-    """Initialize the Explainable Naive Bayes object.
+  def __init__(
+      self,
+      bw_function: Union[BWFunctionName, str] = BWFunctionName.HSILVERMAN,
+      kernel: Union[Kernel, str] = Kernel.GAUSSIAN,
+      algorithm: Union[Algorithm, str] = Algorithm.AUTO,
+      n_sample: int = 50,
+      show_progress_bar: bool = False
+  ) -> None:
+    """Initialize the Explainable Naive Bayes model.
 
-    ## Args:
-    :param show_progress_bar: Whether to show progress bars.
+    Args:
+        bw_function (Union[BWFunctionName, str], optional): Bandwidth selection
+          function. Defaults to BWFunctionName.HSILVERMAN.
+        kernel (Union[Kernel, str], optional): Kernel type for density
+          estimation. Defaults to Kernel.GAUSSIAN.
+        algorithm (Union[Algorithm, str], optional): Algorithm for kernel
+          density estimation. Defaults to Algorithm.AUTO.
+        n_sample (int, optional): Number of samples for density estimation.
+          Defaults to 50.
+        show_progress_bar (bool, optional): Whether to display a progress bar
+          during fitting. Defaults to False.
     """
+    self.bw_function = str(bw_function)
+    self.kernel = str(kernel)
+    self.algorithm = str(algorithm)
+    self.n_sample = n_sample
     self.show_progress_bar = show_progress_bar
 
   @property
@@ -53,53 +74,61 @@ class XNB:
     else:
       raise NotFittedError()
 
+  def _repr_html_(self):
+    """Return html representation of the model."""
+    return ('''
+      <style>
+          .sklearn-mime-model {{
+              display: inline-block;
+              padding: 8px 12px;
+              background: #f8f9fa;
+              border-left: 5px solid #007bff;
+              border-radius: 4px;
+              font-family: monospace;
+              font-size: 14px;
+          }}  # noqa
+      </style>
+    '''
+    )  # noqa
+
   def fit(
       self,
       x: DataFrame,
       y: Series,
-      bw_function: BWFunctionName = BWFunctionName.HSILVERMAN,
-      kernel: Kernel = Kernel.GAUSSIAN,
-      algorithm: Algorithm = Algorithm.AUTO,
-      n_sample: int = 50
-  ) -> None:
+  ) -> 'XNB':
     """Calculate the best feature selection to be able to predict later.
 
-    ## Args:
-    :param x: DataFrame containing the input features
-    :param y: Series containing the target variable
-    :param bw_function: Bandwidth function to use, defaults to
-    BWFunctionName.HSILVERMAN
-    :param kernel: Kernel function to use, defaults to Kernel.GAUSSIAN
-    :param algorithm: Algorithm to use for KDE, defaults to Algorithm.AUTO
-    :param n_sample: Number of samples to use, defaults to 50
+    Args:
+        x (DataFrame):  DataFrame containing the input features
+        y (Series): Series containing the target variable
 
-    ## Returns:
-    :return: None
+    Returns:
+        XNB: Returns the instance itself.
     """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
-        x, y, bw_function, n_sample, class_values)
+        x, y, self.bw_function, self.n_sample, class_values)
     kde_list = self._calculate_kdes(
-        x, y, kernel, algorithm, bw_dict, n_sample, class_values)
+        x, y, self.kernel, self.algorithm, bw_dict, self.n_sample, class_values)
     ranking = self._calculate_divergence(kde_list)
     self._calculate_feature_selection(ranking, class_values)
-    self._calculate_necessary_kde(x, y, bw_dict, kernel, algorithm)
+    self._calculate_necessary_kde(x, y, bw_dict, self.kernel, self.algorithm)
     self._calculate_target_representation(y, class_values)
+
+    self.is_fitted_ = True
+    return self
 
   def predict_proba(self, x: DataFrame) -> np.ndarray:
     """Return the probabilities of each class for all rows in the DataFrame.
 
-    ## Args:
-    :param x: DataFrame containing the input to predict probabilities.
+    Args:
+        x (DataFrame): DataFrame containing the input to predict probabilities.
 
-    ## Returns:
-    :return: Array where each row contains the probabilities for each class.
+    Returns:
+        np.ndarray: Array where each row contains the probabilities for each
+        class.
     """
-    cond1 = not hasattr(self, '_kernel_density_dict')
-    cond2 = not hasattr(self, '_class_representation')
-
-    if cond1 or cond2:
-      raise NotFittedError()
+    self._check_if_not_fitted_error()
 
     log_probs = self._calculate_class_log_probabilities(x)
     return self._normalize_probabilities(log_probs)
@@ -107,28 +136,32 @@ class XNB:
   def predict(self, x: DataFrame) -> np.ndarray:
     """Return the predicted class for each row in the DataFrame.
 
-    ## Args:
-    :param x: DataFrame containing the input to predict.
+    Args:
+        x (DataFrame): DataFrame containing the input to predict.
 
-    ## Returns:
-    :return: Numpy array containing the predicted class for each row.
+    Returns:
+        np.ndarray: Numpy array containing the predicted class for each row.
     """
-    cond1 = not hasattr(self, '_kernel_density_dict')
-    cond2 = not hasattr(self, '_class_representation')
-
-    if cond1 or cond2:
-      raise NotFittedError()
+    self._check_if_not_fitted_error()
 
     log_probs = self._calculate_class_log_probabilities(x)
-    probabilities = self._normalize_probabilities(log_probs)
+    probabilities = self.predict_proba(x)
     class_indices = np.argmax(probabilities, axis=1)
     return np.array(sorted(log_probs.keys()))[class_indices]
+
+  def _check_if_not_fitted_error(self) -> None:
+    cond1 = not hasattr(self, '_kernel_density_dict')
+    cond2 = not hasattr(self, '_class_representation')
+    cond3 = not hasattr(self, 'is_fitted_')
+
+    if cond1 or cond2 or cond3:
+      raise NotFittedError()
 
   def _calculate_bandwidth(
       self,
       x: DataFrame,
       y: Series,
-      bw_function_name: BWFunctionName,
+      bw_function_name: str,
       n_sample: int,
       class_values: set
   ) -> Dict[Union[str, float], Dict[Union[str, float], float]]:
@@ -152,8 +185,8 @@ class XNB:
       self,
       x: DataFrame,
       y: Series,
-      kernel: Kernel,
-      algorithm: Algorithm,
+      kernel: str,
+      algorithm: str,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       n_sample: int,
       class_values: set
@@ -176,9 +209,9 @@ class XNB:
 
           # Fit Kernel Density
           kde = KernelDensity(
-              kernel=kernel.value,
+              kernel=kernel,
               bandwidth=bw,
-              algorithm=algorithm.value
+              algorithm=algorithm
           ).fit(data.values[:, np.newaxis])
 
           # Calculate y_points
@@ -366,8 +399,8 @@ class XNB:
       x: DataFrame,
       y: Series,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
-      kernel: Kernel,
-      algorithm: Algorithm
+      kernel: str,
+      algorithm: str
   ) -> Dict:
     """Calculate the KDE for each class."""
     self._kernel_density_dict = {}
@@ -382,9 +415,9 @@ class XNB:
           data = data_class[feature]
           bw = bw_dict[class_value][feature]
           kde = KernelDensity(
-              kernel=kernel.value,
+              kernel=kernel,
               bandwidth=bw,
-              algorithm=algorithm.value
+              algorithm=algorithm
           ).fit(data.values[:, np.newaxis])
           self._kernel_density_dict[class_value][feature] = kde
         next_bar()

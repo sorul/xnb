@@ -1,6 +1,6 @@
 [project]
 name = "xnb"
-version = "0.3.1"
+version = "0.4.1"
 description = "Explainable Naive Bayes (XNB) classifier. Using KDE for feature selection and Naive Bayes for prediction."
 readme = "README.md"
 requires-python = ">=3.9.0"
@@ -67,7 +67,7 @@ ipykernel = "^6.29.5"
 matplotlib = "^3.9.2"
 seaborn = "^0.13.2"
 openpyxl = "^3.1.5"
-tornado = "^6.4.2"
+tornado = "^6.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
