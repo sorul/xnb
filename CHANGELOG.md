@@ -1,3 +1,7 @@
+# 0.4.2 (2025-07-19)
+### Security
+- Bumped Pillow to version 11.3.0 to address upstream security vulnerability.
+
 # 0.4.1 (2025-05-18)
 ### Fix
 - Tornado dev dependency it logs a warning but continues trying to parse the remainder of the data. This allows remote attackers to generate an extremely high volume of logs, constituting a DoS attack vulnerability, fixed in 6.5.0
