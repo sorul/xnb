@@ -1,3 +1,7 @@
+# 0.4.3 (2025-09-20)
+### Fix
+- README.md file updated with the last version of the library and its example.
+
 # 0.4.2 (2025-07-19)
 ### Security
 - Bumped Pillow to version 11.3.0 to address upstream security vulnerability.
