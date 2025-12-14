@@ -1,3 +1,7 @@
+# 0.4.4 (2025-12-14)
+### Fix
+- Fixing fonttools dev-dependency to address security vulnerability.
+
 # 0.4.3 (2025-09-20)
 ### Fix
 - README.md file updated with the last version of the library and its example.
