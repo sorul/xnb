@@ -1,6 +1,6 @@
 [project]
 name = "xnb"
-version = "0.4.4"
+version = "0.4.5"
 description = "Explainable Naive Bayes (XNB) classifier. Using KDE for feature selection and Naive Bayes for prediction."
 readme = "README.md"
 requires-python = ">=3.9.0"

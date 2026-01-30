@@ -26,10 +26,7 @@ tag:
 	@git add .
 	@git commit -am "v$$(poetry version -s)"
 	@git push
-	@git checkout master
 	@git merge --no-edit --log developer
 	@git tag v$$(poetry version -s)
-	@git push --tags
-	@git checkout developer
 	@poetry version
 	@echo "Tagging complete. Make a pull request to merge developer into master -> https://github.com/sorul/xnb/compare/developer?expand=1"
