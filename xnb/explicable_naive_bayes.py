@@ -366,7 +366,7 @@ class XNB(ClassifierMixin, BaseEstimator):
         p = 1
         for x in hellinger_dict[class_b]:
           if x.class_value == class_a:
-            p *= (1 - x.distance)
+            p *= max(1 - x.distance, 1e-6)
         stop_dict[class_a][class_b] = (1 - (p * (1 - hellinger))) >= threshold
 
       hellinger_dict[class_b].add(
