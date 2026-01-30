@@ -77,7 +77,7 @@ class XNB(ClassifierMixin, BaseEstimator):
     else:
       raise NotFittedError()
 
-  def _repr_html_(self):
+  def _repr_html_(self):  # pragma: no cover
     """Return html representation of the model."""
     return (
         '''
