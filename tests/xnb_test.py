@@ -3,7 +3,7 @@ from pathlib import Path
 import sklearn.model_selection as model_selection
 from typing import Tuple
 from collections import defaultdict
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score, make_scorer
 import pandas as pd
 from itertools import product
 import pytest
@@ -12,6 +12,14 @@ from numpy import array
 
 from xnb import XNB, NotFittedError
 from xnb.enums import BWFunctionName, Kernel, Algorithm
+
+
+def accuracy_score_prob(y_true, y_pred_proba):
+  """Consume predict_proba output for custom scoring."""
+  classes_sorted = sorted(set(y_true))
+  y_pred = y_pred_proba.argmax(axis=1)
+  y_pred_labels = [classes_sorted[idx] for idx in y_pred]
+  return accuracy_score(y_true, y_pred_labels)
 
 
 def test_accuracy_benchmark_naive_bayes():
@@ -227,9 +235,9 @@ def test_predict(is_benchmark, benchmark):
   assert accuracy_score(y_test, y_pred) > 0.5
 
 
-def test_proba_predict(is_benchmark, benchmark):
+def test_predict_proba(is_benchmark, benchmark):
   """
-  poetry run pytest -k test_proba_predict -v
+  poetry run pytest -k test_predict_proba -v
   """
   x, y = load_dataset(Path('data/iris.csv'))
   x_train = x.sample(frac=0.8, random_state=1)
@@ -248,6 +256,21 @@ def test_proba_predict(is_benchmark, benchmark):
   assert y_pred.shape[0] == len(y_test)
   assert y_pred.shape[1] == len(set(y_test))
   assert roc_auc_score(y_test, y_pred, multi_class='ovr') > 0.5
+
+
+def test_make_scorer_recognizes_classifier():
+  """
+  Ensure make_scorer works with XNB as classifier using predict_proba.
+  """
+  x, y = load_dataset(Path('data/iris.csv'))
+  xnb = XNB()
+  xnb.fit(x, y)
+  scorer = make_scorer(
+      accuracy_score_prob,
+      response_method='predict_proba',
+  )
+  score = scorer(xnb, x, y)
+  assert score > 0.5
 
 
 def test_NotFittedError():

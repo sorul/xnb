@@ -1,27 +1,28 @@
 """Explicable Naive Bayes."""
-from sklearn.neighbors import KernelDensity
-from typing import Tuple, List, Dict, Set, Union
+from typing import Tuple, List, Dict, Set, Union, ClassVar
 from pandas import DataFrame, Series
 from collections import defaultdict
 from itertools import product
 from math import sqrt
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.neighbors import KernelDensity
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 from xnb._kde_object import KDE
 from xnb.enums import Algorithm, BWFunctionName, Kernel
 from xnb._bandwidth_functions import get_bandwidth_function
 from xnb._progress_bar import progress_bar
 
-
-__all__ = [
-    'XNB',
-    'NotFittedError'
-]
+__all__ = ['XNB', 'NotFittedError']
 
 
 class _ClassFeatureDistance:
-  def __init__(self, class_value: str, feature: str, distance: float = 0.0):
+  def __init__(
+      self,
+      class_value: str,
+      feature: str,
+      distance: float = 0.0,
+  ):
     self.class_value = class_value
     self.feature = feature
     self.distance = distance
@@ -30,8 +31,10 @@ class _ClassFeatureDistance:
     return hash(str(self.class_value) + str(self.feature))
 
 
-class XNB(BaseEstimator):
+class XNB(ClassifierMixin, BaseEstimator):
   """Class to perform Explainable Naive Bayes."""
+
+  _estimator_type: ClassVar[str] = 'classifier'
 
   def __init__(
       self,
@@ -39,7 +42,7 @@ class XNB(BaseEstimator):
       kernel: Union[Kernel, str] = Kernel.GAUSSIAN,
       algorithm: Union[Algorithm, str] = Algorithm.AUTO,
       n_sample: int = 50,
-      show_progress_bar: bool = False
+      show_progress_bar: bool = False,
   ) -> None:
     """Initialize the Explainable Naive Bayes model.
 
@@ -76,7 +79,8 @@ class XNB(BaseEstimator):
 
   def _repr_html_(self):
     """Return html representation of the model."""
-    return ('''
+    return (
+        '''
       <style>
           .sklearn-mime-model {{
               display: inline-block;
@@ -107,13 +111,18 @@ class XNB(BaseEstimator):
     """
     class_values = set(y)
     bw_dict = self._calculate_bandwidth(
-        x, y, self.bw_function, self.n_sample, class_values)
+        x, y, self.bw_function, self.n_sample, class_values
+    )
     kde_list = self._calculate_kdes(
-        x, y, self.kernel, self.algorithm, bw_dict, self.n_sample, class_values)
+        x, y, self.kernel, self.algorithm, bw_dict, self.n_sample, class_values
+    )
     ranking = self._calculate_divergence(kde_list)
     self._calculate_feature_selection(ranking, class_values)
     self._calculate_necessary_kde(x, y, bw_dict, self.kernel, self.algorithm)
     self._calculate_target_representation(y, class_values)
+
+    # scikit-learn compatibility fields
+    self.classes_ = np.array(sorted(class_values))
 
     self.is_fitted_ = True
     return self
@@ -163,7 +172,7 @@ class XNB(BaseEstimator):
       y: Series,
       bw_function_name: str,
       n_sample: int,
-      class_values: set
+      class_values: set,
   ) -> Dict[Union[str, float], Dict[Union[str, float], float]]:
     bw_dict = {}
     bw_function = get_bandwidth_function(bw_function_name)
@@ -189,7 +198,7 @@ class XNB(BaseEstimator):
       algorithm: str,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       n_sample: int,
-      class_values: set
+      class_values: set,
   ) -> List[KDE]:
     """Calculate the KDE for each class and feature."""
     kde_list = []
@@ -209,30 +218,21 @@ class XNB(BaseEstimator):
 
           # Fit Kernel Density
           kde = KernelDensity(
-              kernel=kernel,
+              kernel=kernel,  # type: ignore
               bandwidth=bw,
-              algorithm=algorithm
+              algorithm=algorithm,  # type: ignore
           ).fit(data.values[:, np.newaxis])
 
           # Calculate y_points
           y_points = np.exp(kde.score_samples(x_points[:, np.newaxis]))
 
           # Append the KDE object to the results list
-          kde_list.append(KDE(
-              feature,
-              class_value,
-              kde,
-              x_points,
-              y_points
-          ))
+          kde_list.append(KDE(feature, class_value, kde, x_points, y_points))
           next_bar()
 
     return kde_list
 
-  def _calculate_divergence(
-      self,
-      kde_list: List[KDE]
-  ) -> DataFrame:
+  def _calculate_divergence(self, kde_list: List[KDE]) -> DataFrame:
     """Calculate the divergence (distance) between each classes."""
     kde_dict = defaultdict(list[KDE])
 
@@ -259,10 +259,10 @@ class XNB(BaseEstimator):
 
     ranking = DataFrame(
         scores,
-        columns=['feature', 'p0', 'p1', 'hellinger']
+        columns=['feature', 'p0', 'p1', 'hellinger'],
     ).drop_duplicates().sort_values(
         by=['hellinger', 'feature', 'p0', 'p1'],
-        ascending=[False, True, True, True]
+        ascending=[False, True, True, True],
     )
     threshold = sum(ranking.hellinger) / len(ranking.hellinger)
     return ranking[ranking.hellinger > threshold].reset_index(drop=True)
@@ -289,9 +289,9 @@ class XNB(BaseEstimator):
     return data
 
   def _calculate_feature_selection(
-          self,
-          ranking: DataFrame,
-          class_values: set
+      self,
+      ranking: DataFrame,
+      class_values: set,
   ) -> Dict[str, Set[Union[str, float]]]:
     """Calculate the feature selection for each class."""
     threshold = 0.999
@@ -332,14 +332,10 @@ class XNB(BaseEstimator):
     self._feature_selection_dict = defaultdict(set[Union[str, float]])
     for class_value in hellinger_dict.keys():
       cv = (
-          float(class_value)
-          if isinstance(class_value, float)
-          else class_value
+          float(class_value) if isinstance(class_value, float) else class_value
       )
       self._feature_selection_dict[cv] = {
-          float(cfd.feature)
-          if isinstance(cfd.feature, float)
-          else cfd.feature
+          float(cfd.feature) if isinstance(cfd.feature, float) else cfd.feature
           for cfd in hellinger_dict[cv]
       }
     self._feature_selection_dict = dict(self._feature_selection_dict)
@@ -347,21 +343,22 @@ class XNB(BaseEstimator):
 
   @staticmethod
   def _update_feature_selection_dict(
-          hellinger_dict: Dict[Union[str, float], Set[_ClassFeatureDistance]],
-          stop_dict: Dict[str, Dict[str, bool]],
-          feature: str,
-          hellinger: float,
-          threshold: float,
-          class_a: str,
-          class_b: str
+      hellinger_dict: Dict[Union[str, float], Set[_ClassFeatureDistance]],
+      stop_dict: Dict[str, Dict[str, bool]],
+      feature: str,
+      hellinger: float,
+      threshold: float,
+      class_a: str,
+      class_b: str,
   ) -> Tuple[
       Dict[Union[str, float], Set[_ClassFeatureDistance]],
-      Dict[str, Dict[str, bool]]
+      Dict[str, Dict[str, bool]],
   ]:
     """Auxiliary method to calculate the feature selection."""
     if not stop_dict[class_a][class_b]:
       not_in_dict = class_a not in {
-          x.class_value for x in hellinger_dict[class_b]
+          x.class_value
+          for x in hellinger_dict[class_b]
       }
       if not_in_dict:
         stop_dict[class_a][class_b] = hellinger >= threshold
@@ -374,9 +371,7 @@ class XNB(BaseEstimator):
 
       hellinger_dict[class_b].add(
           _ClassFeatureDistance(
-              class_value=class_a,
-              feature=feature,
-              distance=hellinger
+              class_value=class_a, feature=feature, distance=hellinger
           )
       )
     return hellinger_dict, stop_dict
@@ -384,7 +379,7 @@ class XNB(BaseEstimator):
   def _calculate_target_representation(
       self,
       target_col: Series,
-      class_values: Set
+      class_values: Set,
   ) -> Dict:
     """Calculate the percentage representation for each class."""
     self._class_representation = {}
@@ -400,7 +395,7 @@ class XNB(BaseEstimator):
       y: Series,
       bw_dict: Dict[Union[str, float], Dict[Union[str, float], float]],
       kernel: str,
-      algorithm: str
+      algorithm: str,
   ) -> Dict:
     """Calculate the KDE for each class."""
     self._kernel_density_dict = {}
@@ -415,9 +410,9 @@ class XNB(BaseEstimator):
           data = data_class[feature]
           bw = bw_dict[class_value][feature]
           kde = KernelDensity(
-              kernel=kernel,
+              kernel=kernel,  # type: ignore
               bandwidth=bw,
-              algorithm=algorithm
+              algorithm=algorithm,  # type: ignore
           ).fit(data.values[:, np.newaxis])
           self._kernel_density_dict[class_value][feature] = kde
         next_bar()
@@ -441,10 +436,10 @@ class XNB(BaseEstimator):
 
     for class_value, features in self.feature_selection_dict.items():
       for feature in features:
-          # Get KDE scores for the entire column
+        # Get KDE scores for the entire column
         log_probs[class_value] += self\
             ._kernel_density_dict[class_value][feature].score_samples(
-            x[feature].values[:, np.newaxis]
+            x[feature].to_numpy()[:, np.newaxis]
         )
       # Add log prior probabilities
       log_probs[class_value] += np.log(self._class_representation[class_value])
@@ -461,7 +456,8 @@ class XNB(BaseEstimator):
     :return: Array of shape (n_samples, n_classes) with normalized probs.
     """
     log_probs_matrix = np.vstack(
-        [log_probs[class_value] for class_value in sorted(log_probs.keys())]).T
+        [log_probs[class_value] for class_value in sorted(log_probs.keys())]
+    ).T
     probs_matrix = np.exp(log_probs_matrix)
     probs_matrix /= probs_matrix.sum(axis=1, keepdims=True)
     return probs_matrix
@@ -473,7 +469,6 @@ class NotFittedError(ValueError, AttributeError):
   This class inherits from both ValueError and AttributeError to help with
   exception handling and backward compatibility.
   """
-
   def __init__(
       self,
       message=(
