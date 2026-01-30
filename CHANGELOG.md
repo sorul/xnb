@@ -1,3 +1,11 @@
+# 0.4.5 (2026-01-30)
+### Fix
+- Fixing scikit-learn compatibility by inheriting from ClassifierMixin.
+- Prevent numerical underflow in feature selection by flooring (1 - distance) to a small positive value when accumulating class-wise divergence products.
+
+### Test
+- Added test to ensure compatibility with scikit-learn's make_scorer using 'predict_proba'.
+
 # 0.4.4 (2025-12-14)
 ### Fix
 - Fixing fonttools dev-dependency to address security vulnerability.
