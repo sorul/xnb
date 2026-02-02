@@ -1,3 +1,10 @@
+# 0.4.6 (2026-02-02)
+### Fix
+- Fixing "_normalize_probabilities" method to avoid numerical underflow by using log-sum-exp trick.
+
+### Test
+- Added test to ensure "predict_proba" method does not emit RuntimeWarnings for division.
+
 # 0.4.5 (2026-01-30)
 ### Fix
 - Fixing scikit-learn compatibility by inheriting from ClassifierMixin.

@@ -5,6 +5,8 @@ from collections import defaultdict
 from itertools import product
 from math import sqrt
 import numpy as np
+from scipy.special import logsumexp
+
 from sklearn.neighbors import KernelDensity
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -458,9 +460,8 @@ class XNB(ClassifierMixin, BaseEstimator):
     log_probs_matrix = np.vstack(
         [log_probs[class_value] for class_value in sorted(log_probs.keys())]
     ).T
-    probs_matrix = np.exp(log_probs_matrix)
-    probs_matrix /= probs_matrix.sum(axis=1, keepdims=True)
-    return probs_matrix
+    log_probs_matrix -= logsumexp(log_probs_matrix, axis=1, keepdims=True)
+    return np.exp(log_probs_matrix)
 
 
 class NotFittedError(ValueError, AttributeError):
