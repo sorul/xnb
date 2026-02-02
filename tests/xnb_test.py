@@ -1,3 +1,4 @@
+import warnings
 from sklearn.naive_bayes import GaussianNB
 from pathlib import Path
 import sklearn.model_selection as model_selection
@@ -8,7 +9,7 @@ import pandas as pd
 from itertools import product
 import pytest
 from numpy import array
-
+import numpy as np
 
 from xnb import XNB, NotFittedError
 from xnb.enums import BWFunctionName, Kernel, Algorithm
@@ -30,7 +31,8 @@ def test_accuracy_benchmark_naive_bayes():
   accuracy_list = {'xnb': [], 'nb1': [], 'nb2': []}
   n_features_selected = []
   skf = model_selection.StratifiedKFold(
-      n_splits=5, shuffle=True, random_state=0)
+      n_splits=5, shuffle=True, random_state=0
+  )
   for train_index, test_index in skf.split(x, y):
     x_train, x_test = x.iloc[train_index], x.iloc[test_index]
     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -79,8 +81,7 @@ def test_calculate_target_representation():
   _, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
   d = xnb._calculate_target_representation(
-      target_col=pd.Series(y),
-      class_values=set(y)
+      target_col=pd.Series(y), class_values=set(y)
   )
   assert len(d) == len(set(y))
   for k in d:
@@ -97,8 +98,8 @@ def test_calculate_bw_function(is_benchmark, benchmark):
 
   if is_benchmark:
     d = benchmark(
-        xnb._calculate_bandwidth,
-        x, y, BWFunctionName.BEST_ESTIMATOR, 50, set(y)
+        xnb._calculate_bandwidth, x, y, BWFunctionName.BEST_ESTIMATOR, 50,
+        set(y)
     )
   else:
     d = xnb._calculate_bandwidth(
@@ -114,14 +115,12 @@ def test_calculate_kde(is_benchmark, benchmark):
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
-  bw = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSJ, 50, set(y)
-  )
+  bw = xnb._calculate_bandwidth(x, y, BWFunctionName.HSJ, 50, set(y))
 
   if is_benchmark:
     kde_list = benchmark(
-        xnb._calculate_kdes,
-        x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
+        xnb._calculate_kdes, x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50,
+        set(y)
     )
   else:
     kde_list = xnb._calculate_kdes(
@@ -137,9 +136,7 @@ def test_calculate_divergence(is_benchmark, benchmark):
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
-  bw = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSJ, 50, set(y)
-  )
+  bw = xnb._calculate_bandwidth(x, y, BWFunctionName.HSJ, 50, set(y))
   kde_list = xnb._calculate_kdes(
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
   )
@@ -158,9 +155,7 @@ def test_calculate_feature_selection(is_benchmark, benchmark):
   """
   x, y = load_dataset(Path('data/iris.csv'))
   xnb = XNB()
-  bw = xnb._calculate_bandwidth(
-      x, y, BWFunctionName.HSJ, 50, set(y)
-  )
+  bw = xnb._calculate_bandwidth(x, y, BWFunctionName.HSJ, 50, set(y))
   kde_list = xnb._calculate_kdes(
       x, y, Kernel.GAUSSIAN, Algorithm.AUTO, bw, 50, set(y)
   )
@@ -316,11 +311,42 @@ def test_hellinger_distance():
   assert XNB._hellinger_distance(p, q) == 1.0
 
 
+def test_predict_proba_no_runtime_warning():
+  """Verify predict_proba doesn't emit RuntimeWarning for division."""
+  # Two features with different divergences to avoid an empty ranking
+  x_train = pd.DataFrame({
+      'x': [0, 0, 0, 10, 10, 10],
+      'y': [0, 0, 1, 0, 10, 10],
+  })
+  y_train = pd.Series([0, 0, 0, 1, 1, 1])
+
+  # Samples far from the estimated density that previously caused underflow
+  x_test = pd.DataFrame({'x': [1e9, -1e9]})
+
+  xnb = XNB()
+  xnb.fit(x_train, y_train)
+
+  # The specific warning should not appear
+  msg = 'invalid value encountered in divide'
+  with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter('always')
+    probs = xnb.predict_proba(x_test)
+  offending = [w for w in caught if msg in str(w.message)]
+  assert not offending, (
+      'Unexpected warning(s): ' +
+      '; '.join(f'{w.filename}:{w.lineno} {w.message}' for w in offending)
+  )
+
+  assert probs.shape == (2, 2)
+  assert np.all(np.isfinite(probs))
+  np.testing.assert_allclose(probs.sum(axis=1), 1.0, atol=1e-12)
+
+
 def load_dataset(
-        file_path: Path,
-        class_column: str = 'class',
-        n_cols: int = 10,
-        sep: str = ','
+    file_path: Path,
+    class_column: str = 'class',
+    n_cols: int = 10,
+    sep: str = ','
 ) -> Tuple[pd.DataFrame, pd.Series]:
   df = pd.read_csv(file_path, sep=sep).drop('samples', axis=1, errors='ignore')
   y = df[class_column]
