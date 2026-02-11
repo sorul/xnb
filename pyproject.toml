@@ -3,7 +3,7 @@ name = "xnb"
 version = "0.5.0"
 description = "Explainable Naive Bayes (XNB) classifier. Using KDE for feature selection and Naive Bayes for prediction."
 readme = "README.md"
-requires-python = ">=3.9.0"
+requires-python = ">=3.10.0"
 authors = [
   { name = "Cayetano Romero Vargas", email = "cromerovargas2d@gmail.com" },
   { name = "Jesús Aguilar", email = "aguilar@upo.es" }
