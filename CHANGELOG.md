@@ -1,3 +1,10 @@
+# 0.5.0 (2026-02-11)
+### Fix
+- Updated pillow lib to address security vulnerability.
+
+### Build
+- Raised minimum supported Python to 3.10 (was 3.9).
+
 # 0.4.6 (2026-02-02)
 ### Fix
 - Fixing "_normalize_probabilities" method to avoid numerical underflow by using log-sum-exp trick.
