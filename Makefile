@@ -12,20 +12,20 @@ dev_requirements:
 	poetry lock
 	poetry export --with dev -f requirements.txt --output requirements_dev.txt --without-hashes
 
-push_develop:
+push_developer:
 	@poetry update
 	@make requirements
 	@make dev_requirements
-	git commit --allow-empty -m "updating requirements and pushing to develop"
+	git commit --allow-empty -m "updating requirements and pushing to developer"
 
 check_merge_master:
 	@current_branch=$$(git branch --show-current); \
-	if [ "$$current_branch" != "develop" ]; then \
-		echo "ERROR: check_merge_master must run from develop (current: $$current_branch)"; \
+	if [ "$$current_branch" != "developer" ]; then \
+		echo "ERROR: check_merge_master must run from developer (current: $$current_branch)"; \
 		exit 1; \
 	fi
 	@git fetch origin
-	@echo "Checking merge conflicts between develop and origin/master..."
+	@echo "Checking merge conflicts between developer and origin/master..."
 	@set -e; \
 	base_commit=$$(git merge-base HEAD origin/master); \
 	merge_output=$$(mktemp); \
@@ -96,22 +96,22 @@ check_untracked:
 		exit 1; \
 	fi
 
-check_origin_develop:
+check_origin_developer:
 	@current_branch=$$(git branch --show-current); \
-	if [ "$$current_branch" != "develop" ]; then \
-		echo "ERROR: check_origin_develop must run from develop (current: $$current_branch)"; \
+	if [ "$$current_branch" != "developer" ]; then \
+		echo "ERROR: check_origin_developer must run from developer (current: $$current_branch)"; \
 		exit 1; \
 	fi
-	@git fetch origin develop
-	@behind_count=$$(git rev-list --count HEAD..origin/develop); \
+	@git fetch origin developer
+	@behind_count=$$(git rev-list --count HEAD..origin/developer); \
 	if [ "$$behind_count" -ne 0 ]; then \
-		echo "ERROR: origin/develop is ahead of local develop by $$behind_count commit(s)."; \
-		echo "Run 'git pull --rebase origin develop' before make tag."; \
+		echo "ERROR: origin/developer is ahead of local developer by $$behind_count commit(s)."; \
+		echo "Run 'git pull --rebase origin developer' before make tag."; \
 		exit 1; \
 	fi
 
 tag:
-	@make check_origin_develop
+	@make check_origin_developer
 	@make check_untracked
 	@make check_merge_master
 	@poetry update
@@ -128,4 +128,4 @@ tag:
 	@git tag v$$(poetry version -s)
 	@git push --tags
 	@poetry version
-	@echo "Tagging complete. Make a pull request to merge develop into master -> https://github.com/sorul/xnb/compare/developer?expand=1"
+	@echo "Tagging complete. Make a pull request to merge developer into master -> https://github.com/sorul/xnb/compare/developer?expand=1"
