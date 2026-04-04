@@ -1,3 +1,7 @@
+# 0.5.1 (2026-04-04)
+### Fix
+- Updated tornado lib to address security vulnerability.
+
 # 0.5.0 (2026-02-11)
 ### Fix
 - Updated pillow lib to address security vulnerability.

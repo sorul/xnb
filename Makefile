@@ -119,13 +119,18 @@ tag:
 	@make test
 	@make requirements
 	@make dev_requirements
-	@if ! git diff --quiet; then \
-		git commit -m "v$$(poetry version -s)"; \
+	@if git diff --quiet && git diff --cached --quiet; then \
+		echo "No tracked changes to commit. Tagging current HEAD."; \
 	else \
-		echo "No changes to commit. Tagging current HEAD."; \
+		git add -u; \
+		git commit -m "v$$(poetry version -s)"; \
 	fi
-	@git push
+	@if git rev-parse -q --verify refs/tags/v$$(poetry version -s) >/dev/null; then \
+		echo "ERROR: Tag v$$(poetry version -s) already exists."; \
+		exit 1; \
+	fi
 	@git tag v$$(poetry version -s)
+	@git push
 	@git push --tags
 	@poetry version
 	@echo "Tagging complete. Make a pull request to merge developer into master -> https://github.com/sorul/xnb/compare/developer?expand=1"
