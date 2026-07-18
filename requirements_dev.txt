@@ -1,4 +1,4 @@
-about-time==4.2.1 ; python_version >= "3.10" and python_version < "4"
+about-time==4.2.2 ; python_version >= "3.10" and python_version < "4"
 alive-progress==3.3.0 ; python_version >= "3.10" and python_version < "4"
 appnope==0.1.4 ; python_version >= "3.10" and python_full_version < "4.0.0" and platform_system == "Darwin"
 astroid==4.1.2 ; python_full_version >= "3.10.0" and python_full_version < "4.0.0"
