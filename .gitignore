@@ -164,6 +164,7 @@ data/*
 !data/iris.csv
 .benchmarks/
 xnb_jesus/
+.atl/
 
 # Files
 main.py
